@@ -219,7 +219,7 @@ static void AllocMoreHeaps(void)
 #endif
 void FlashConfig(void) 
 {
-		unsigned int mem_write_code [] = {
+		static unsigned int mem_write_code [] = {
 
 		#if __option(vle)
 			/*for processors which support VLE only or for 'VLE on' option*/

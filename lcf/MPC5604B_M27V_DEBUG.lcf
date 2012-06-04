@@ -10,9 +10,9 @@ MEMORY
     pseudo_rom:         org = 0x40000000,   len = 0x00004000    
     init:               org = 0x40005000,   len = 0x00001000
     exception_handlers: org = 0x40006000,   len = 0x00001000
-    internal_ram:       org = 0x40007000,   len = 0x00001800
-    heap  :             org = 0x40009800,   len = 0x00000400 /* Heap start  */
-    stack :             org = 0x40009C00,   len = 0x00000400 /* Stack Start */    
+    internal_ram:       org = 0x40007000,   len = 0x00002000
+    heap  :             org = 0x4000A000,   len = 0x00000400 /* Heap start  */
+    stack :             org = 0x4000A400,   len = 0x00000400 /* Stack Start */    
     
 }
 

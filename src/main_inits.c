@@ -5,6 +5,7 @@
 #include "dMotor.h"
 #include "dFlexCan.h"
 #include "main.h"
+#include "Driver_MPC5604B.h"
 
 
 extern INTCInterruptsHandlerTable[];
@@ -16,33 +17,92 @@ void initMainHardware(void)
 {	
 	disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 	initPads ();
-	initADC();
-	initCTU();
+
+	//initCTU();
 
 	initModesAndClock();
 	initPeriClkGen() ;
 	disableWatchdog();
 	init_LinFLEX_0_UART ();
 	initCAN_0();             /* Initialize FLEXCAN 0*/
+	
+		initADC();
 
 	initINTC();			/* Initialize INTC for software vector mode */
 	initPIT();		  	/* Initialize PIT1 for 1KHz IRQ, priority 2 */
 	initSwIrq4();			/* Initialize software interrupt 4 */
+
+EMIOS_0.MCR.B.GPRE= 63;   			/* Divide 64 MHz sysclk by 63+1 = 64 for 1MHz eMIOS clk*/
+	EMIOS_0.MCR.B.GPREN = 1;			/* Enable eMIOS clock */
+	EMIOS_0.MCR.B.GTBE = 1;  			/* Enable global time base */
+	EMIOS_0.MCR.B.FRZ = 1;    			/* Enable stopping channels when in debug mode */
+
+EMIOS_0.CH[0].CADR.R = 19999;   	/* Period will be 19999+1 = 20000 clocks (20 msec)*/
+	EMIOS_0.CH[0].CCR.B.MODE = 0x50; 	/* Modulus Counter Buffered (MCB) */
+	EMIOS_0.CH[0].CCR.B.BSL = 0x3;   	/* Use internal counter */
+	EMIOS_0.CH[0].CCR.B.UCPRE=0;     	/* Set channel prescaler to divide by 1 */
+	EMIOS_0.CH[0].CCR.B.UCPEN = 1;   	/* Enable prescaler; uses default divide by 1*/
+	EMIOS_0.CH[0].CCR.B.FREN = 1;   	/* Freeze channel counting when in debug mode*/
+
+EMIOS_0.CH[23].CADR.R = 999;      	/* Period will be 999+1 = 1000 clocks (1 msec)*/
+	EMIOS_0.CH[23].CCR.B.MODE = 0x50; 	/* Modulus Counter Buffered (MCB) */
+	EMIOS_0.CH[23].CCR.B.BSL = 0x3;   	/* Use internal counter */
+	EMIOS_0.CH[23].CCR.B.UCPRE=0;     	/* Set channel prescaler to divide by 1 */
+	EMIOS_0.CH[23].CCR.B.UCPEN = 1;   	/* Enable prescaler; uses default divide by 1*/
+	EMIOS_0.CH[23].CCR.B.FREN = 1;   	/* Freeze channel counting when in debug mode*/
 	
-	vfnInit_CamLin_Ipwm();
-	vfnInit_Servo();
-	vfnInit_Motor();
+	EMIOS_0.CH[4].CADR.R = 0;     		/* Leading edge when channel counter bus=0*/
+	EMIOS_0.CH[4].CBDR.R = 1500;      	/* Trailing edge when channel counter bus=1400 Middle, 1650 Right Max, 1150 Left Max*/
+	EMIOS_0.CH[4].CCR.B.BSL = 0x01;  	/* Use counter bus B */
+	EMIOS_0.CH[4].CCR.B.EDPOL = 1;  	/* Polarity-leading edge sets output */
+	EMIOS_0.CH[4].CCR.B.MODE = 0x60; 	/* Mode is OPWM Buffered */
+	SIU.PCR[28].R = 0x0600;           	/* MPC56xxS: Assign EMIOS_0 ch 6 to pad */
 	
+	
+	EMIOS_0.CH[6].CADR.R = 000;     	/* Leading edge when channel counter bus=0*/
+	EMIOS_0.CH[6].CBDR.R = 950;     	/* Trailing edge when channel counter bus=500*/
+	EMIOS_0.CH[6].CCR.B.BSL = 0x0;  	/* Use counter bus A (default) */
+	EMIOS_0.CH[6].CCR.B.EDPOL = 1;  	/* Polarity-leading edge sets output */
+	EMIOS_0.CH[6].CCR.B.MODE = 0x60; 	/* Mode is OPWM Buffered */
+	SIU.PCR[30].R = 0x0600;           	/* MPC56xxS: Assign EMIOS_0 ch 6 to pad */
+	
+	EMIOS_0.CH[7].CADR.R = 0;    		/* Leading edge when channel counter bus=0*/
+	EMIOS_0.CH[7].CBDR.R = 950;     	/* Trailing edge when channel's counter bus=999*/
+	EMIOS_0.CH[7].CCR.B.BSL = 0x0; 		/* Use counter bus A (default) */
+	EMIOS_0.CH[7].CCR.B.EDPOL = 1; 		/* Polarity-leading edge sets output*/
+	EMIOS_0.CH[7].CCR.B.MODE = 0x60; 	/* Mode is OPWM Buffered */
+	SIU.PCR[31].R = 0x0600;           	/* MPC56xxS: Assign EMIOS_0 ch 7 to pad */
+	
+	EMIOS_0.CH[3].CADR.R = 250;      	/* Ch 3: Match "A" is 250 */
+	EMIOS_0.CH[3].CBDR.R = 500;      	/* Ch 3: Match "B" is 500 */
+	EMIOS_0.CH[3].CCR.R= 0x000000E0; 	/* Ch 3: Mode is OPWMB, time base = ch 23 */
+	EMIOS_0.CH[2].CCR.R= 0x01020082; 	/* Ch 2: Mode is SAIC, time base = ch 23 */
+
+
+    SIU.PCR[17].R = 0x0200;				/* Program the drive enable pin of Right Motor as output*/
+	SIU.PCR[16].R = 0x0200;				/* Program the drive enable pin of Left Motor as output*/
+	SIU.PGPDO[0].R = 0x00000000;		/* Disable the motors */
+
+
+    
+  
+//	vfnInit_CamLin_Ipwm();
+//	vfnInit_Servo();
+//	vfnInit_Motor();
+	
+	
+	vfnSet_Servo(800);
 	enableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 	
 }
 
-void initPads (void) {
+void initPads (void) 
+{
 	SIU.PCR[2].R = 0x0503;           	/* MPC56xxB: Initialize PA[2] as eMIOS[2] input */
 	SIU.PCR[3].R = 0x0600;           	/* MPC56xxB: Initialize PA[3] as eMIOS[3] output */
-	SIU.PCR[20].R = 0x2000;          	/* MPC56xxB: Initialize PB[4] as ANP0 */
-	SIU.PCR[21].R = 0x2000;          	/* MPC56xxB: Initialize PB[5] as ANP1 */
-	SIU.PCR[22].R = 0x2000;          	/* MPC56xxB: Initialize PB[6] as ANP2 */
+	SIU.PCR[PCR_ADC_ANP0].R = 0x2000;          	/* MPC56xxB: Initialize PB[4] as ANP0 */
+	SIU.PCR[PCR_ADC_ANP1].R = 0x2000;          	/* MPC56xxB: Initialize PB[5] as ANP1 */
+	SIU.PCR[PCR_ADC_ANP2].R = 0x2000;          	/* MPC56xxB: Initialize PB[6] as ANP2 */
 	
 	//LED OUTS
 	SIU.PCR[68].R = 0x0200;				/* Program the drive enable pin of LED1 (PE4) as output*/
@@ -50,22 +110,24 @@ void initPads (void) {
 	SIU.PCR[70].R = 0x0200;				/* Program the drive enable pin of LED3 (PE6) as output*/
 	SIU.PCR[71].R = 0x0200;				/* Program the drive enable pin of LED4 (PE7) as output*/
 
-//SWITCH IN
+	//SWITCH IN
 	SIU.PCR[64].R = 0x0100;				/* Program the drive enable pin of S1 (PE0) as input*/
 	SIU.PCR[65].R = 0x0100;				/* Program the drive enable pin of S2 (PE1) as input*/
 	SIU.PCR[66].R = 0x0100;				/* Program the drive enable pin of S3 (PE2) as input*/
 	SIU.PCR[67].R = 0x0100;				/* Program the drive enable pin of S4 (PE3) as input*/
+	
+	SIU.PCR[28].R = 0x0600;           	/* MPC56xxB: Initialize PB[12] as eMIOS[4] output */
 }
 
 void initADC(void) {
-	ADC.MCR.R = 0x20020000;         	/* Initialize ADC scan mode*/
-	//ADC.MCR.R = 0x00000000;         	/* Initialize ADC one shot mode*/
-	ADC.NCMR[0].R = 0x0000000F;      	/* Select ANP1:2 inputs for normal conversion */
+	ADC.MCR.R = 0x20000000;         	/* Initialize ADC scan mode*/
+	ADC.NCMR[0].R = 0x00000001;      	/* Select ANP1:2 inputs for normal conversion */
 	ADC.CTR[0].R = 0x00008606;       	/* Conversion times for 32MHz ADClock */
+//	ADC.MCR.B.NSTART = 1;       	/* Conversion times for 32MHz ADClock */
 }
 
 void initCTU(void) {
-  	CTU.EVTCFGR[2].R = 0x00008000;  	 /* Config event on eMIOS Ch 2 to trig ANP[0] */
+  //	CTU.EVTCFGR[2].R = 0x00008000;  	 /* Config event on eMIOS Ch 2 to trig ANP[0] */
 }
 
 
@@ -86,7 +148,6 @@ void initModesAndClock(void) {
 	
 	ME.RUNPC[1].R = 0x00000010;     	/* Peri. Cfg. 1 settings: only run in RUN0 mode */
 	ME.PCTL[16].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
-    ME.PCTL[17].R = 0x01;           	/* MPC56xxB/S FlexCAN1:  select ME.RUNPC[1] */	
 	ME.PCTL[32].R = 0x01;       		/* MPC56xxB ADC 0: select ME.RUNPC[1] */
   	ME.PCTL[57].R = 0x01;       		/* MPC56xxB CTUL: select ME.RUNPC[1] */
   	ME.PCTL[48].R = 0x01;           	/* MPC56xxB/P/S LINFlex 0: select ME.RUNPC[1] */

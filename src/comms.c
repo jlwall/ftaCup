@@ -1,5 +1,9 @@
 #include "MPC5604B_M07N.h"
 #include "comms.h"
+#include "main.h"
+
+
+extern struct CAR car;
 
 volatile uint8_t Result[128];                	/* Read converstion result from ADC input ANS0 */
 
@@ -127,7 +131,7 @@ void TRIM_POT_ADC(void)
 		for (i=0;i <2;i++)
 	{
 		ADC.MCR.B.NSTART=1;     			/* Trigger normal conversions for ADC0 */
-		while (ADC.MSR.B.NSTART == 1) {};
+	//	while (ADC.MSR.B.NSTART == 1) {};
 		curdata = ADC.CDR[0].B.CDATA;
 		printserialsingned(curdata);
 		curdata = ADC.CDR[1].B.CDATA;
@@ -170,41 +174,8 @@ void LEFT_MOTOR_CURRENT(void)
 
 void CAMERA(void)
 {
-	uint8_t i,j;	
-	uint32_t adcdata;
-	
-	TransmitData("****Line Sensor Test****\n\r");
-	SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
-	SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
-	for(j=0;j<2;j++)
-	//for(;;)
-		{
-		SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
-		SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
-		SIU.PGPDO[0].R &= ~0x00000014;		/* All port line low */
-		SIU.PGPDO[0].R |= 0x00000010;		/* Sensor read start High */
-		Delay();
-		SIU.PGPDO[0].R |= 0x00000004;		/* Sensor Clock High */
-		Delay();
-		SIU.PGPDO[0].R &= ~0x00000010;		/* Sensor read start Low */ 
-		Delay();
-		SIU.PGPDO[0].R &= ~0x00000004;		/* Sensor Clock Low */
-		Delay();
-		for (i=0;i<128;i++)
-		{
-			Delay();
-			SIU.PGPDO[0].R |= 0x00000004;	/* Sensor Clock High */
-			ADC.MCR.B.NSTART=1;     		/* Trigger normal conversions for ADC0 */
-			while (ADC.MCR.B.NSTART == 1) {};
-			adcdata = ADC.CDR[0].B.CDATA;
-			Delay();
-			SIU.PGPDO[0].R &= ~0x00000004;	/* Sensor Clock Low */
-			Result[i] = (uint8_t)(adcdata >> 2);		
-		}
-		Delaycamera();
-		//printlistall();
-	}
-	printlistall();
+u8Capture_Pixel_Values();
+printlistall();
 }
 
 void LED(void)
@@ -274,7 +245,9 @@ void SERVO(void)
 
 void MOTOR_LEFT(void)
 {
+
 	TransmitData("****Left Drive Motor Test****\n\r");
+		vfnSet_Duty_Opwm(6,(uint16_t)car.ctrl.targetVelocity ); 
 	SIU.PCR[16].R = 0x0200;				/* Program the drive enable pin of Left Motor as output*/
 	SIU.PGPDO[0].R = 0x00008000;		/* Enable Left the motors */
 	Delaywait();
@@ -284,9 +257,23 @@ void MOTOR_LEFT(void)
 void MOTOR_RIGHT(void)
 {
 	TransmitData("****Right Drive Motor Test****\n\r");
+	vfnSet_Duty_Opwm(7,car.ctrl.targetVelocity ); 
 	SIU.PCR[17].R = 0x0200;				/* Program the drive enable pin of Right Motor as output*/
 	SIU.PGPDO[0].R = 0x00004000;		/* Enable Right the motors */
 	Delaywait();
 	SIU.PGPDO[0].R = 0x00000000;		/* Disable Right the motors */
+}
+
+
+void SendStatusPacket(void)
+{
+	TransmitCharacter(0x01);   
+	TransmitCharacter(0x02);
+	TransmitCharacter(10);
+	
+	  
+
+	TransmitCharacter(0x55);
+	
 }
 

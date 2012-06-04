@@ -14,7 +14,7 @@ uint16_t u16Counter;					/* Used to count Saic events in u16Pulse_Counter() */
 /** Main Configuration Register to setup Emios **/
 void vfnSetup_Emios_0(void)
 {
-	EMIOS_0.MCR.B.GPRE= 15;   							/* Divide 64 MHz sysclk by 15+1 = 16 for 4MHz eMIOS clk*/
+	EMIOS_0.MCR.B.GPRE= 63;   							/* Divide 64 MHz sysclk by 15+1 = 16 for 4MHz eMIOS clk*/
   	EMIOS_0.MCR.B.GTBE = 1;   							/* Enable global time base */
   	EMIOS_0.MCR.B.FRZ = 1;    							/* Enable stopping channels when in debug mode */
 }

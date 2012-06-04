@@ -13,6 +13,7 @@ MEMORY
     init:		           org = 0x00000020,   len = 0x00000FE0	
     exception_handlers:    org = 0x00001000,   len = 0x00001000    
     internal_flash:        org = 0x00002000,   len = 0x0003E000  
+    internal_cal:          org = 0x00800000,   len = 0x00000400  
     internal_ram:          org = 0x40000000,   len = 0x00006000
     heap  :                org = 0x40006000,   len = 0x00001000 
     stack :                org = 0x40007000,   len = 0x00001000 
@@ -48,15 +49,19 @@ SECTIONS
          *(.text)
          *(.text_vle)
        }
-       .rodata (CONST) : {
-         *(.rdata)
-         *(.rodata)
-       }
+       
        .ctors : {}
        .dtors : {}
        extab : {}
        extabindex : {}
     } > internal_flash
+    
+    GROUP : {
+    .rodata (CONST) : {
+         *(.rdata)
+         *(.rodata)
+       }
+    } > internal_cal
     
     GROUP : {
        .__uninitialized_intc_handlertable ALIGN(2048) : {}

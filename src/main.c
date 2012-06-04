@@ -23,7 +23,25 @@ U16 taskCTR_40msec = 0;
 U16 taskCTR_100msec = 0;
 U16 taskCTR_500msec = 0;
 U16 taskCTR_1000msec = 0;
-struct CAR_CTRL car;
+struct CAR car;
+const struct CAR_CAL cal = 
+{
+/*
+	float servGain;
+	float servGainIgain;
+	float servGainDTerm;
+	float setupTrack;
+	float setupWheelBase;
+	float servoArm;
+	float steeringNuckle;
+	float maxAccel;
+
+	S16 errorTol;
+	U16 maxSpeed;
+	U16 lostSpeed;
+*/
+	400,4,5,190,270,25,20,0.65,2,650,200
+};
 
 
     uint32_t Pit1Ctr = 0;   /* Counter for PIT 1 interrupts */
@@ -36,10 +54,27 @@ int main(void)
 {
   volatile int i = 0;
   char option = 0;
-	
+  U32 motLeft;
+  U32 motRight;
+  uint32_t * writer;
+
+
+car.ctrl.targetServoPos = 0;
+ // if(cal.servGain==0)	
   initMainHardware();
   
   
+/*  DFLASH.MCR.B.PGM = 1;
+  DFLASH.LML.B.LLK = 0xFFFE;
+ 
+ writer = (uint32_t*)0x00800000;
+ *writer = 0x12345678; 
+ 
+ DFLASH.MCR.B.EHV = 1;
+ 
+ 
+DFLASH.MCR.B.PGM = 0;
+*/
 
   /* Loop forever */
   for (;;) {
@@ -91,19 +126,48 @@ int main(void)
 				
 				TransmitData("\n\r**Manual Mode**");
 				TransmitData("\n\r*********************");
+				SIU.PGPDO[0].R = 0x0000C000;		/* Enable Right the motors */
+				car.ctrl.targetVelocity = 0;
+				car.ctrl.targetServoPos = 0;
+				car.ctrl.biasVelocity = 500;
+				
+				
+					vfnSet_Duty_Opwm(6,(car.ctrl.targetVelocity * car.ctrl.biasVelocity)/ 1000  ); 
+				vfnSet_Duty_Opwm(7,(car.ctrl.targetVelocity * (1000 - car.ctrl.biasVelocity)) / 1000 ); 
+				
+				EMIOS_0.CH[4].CBDR.R = 1500 + car.ctrl.targetServoPos; 
 				 for (;;) 
 				 {
 					option = ReadData();
 			
 					switch(option)
 					{
-						case 'f':	car.targetServoPos -= 4; break;
-						case 'h':	car.targetServoPos += 4; break;
-						case 't':	car.targetVelocity += 5; break;
-						case 'g':	car.targetVelocity -= 5; break;
+						case 'r':	car.ctrl.biasVelocity -= 5; 
+							if(car.ctrl.biasVelocity <0)
+								car.ctrl.biasVelocity =0;	break;
+						case 'y':	car.ctrl.biasVelocity += 5; 
+							if(car.ctrl.biasVelocity >1000)
+								car.ctrl.biasVelocity =1000;break;
+						case 'f':	car.ctrl.targetServoPos -= 8; break;
+						case 'h':	car.ctrl.targetServoPos += 8; break;
+						case 't':	car.ctrl.targetVelocity += 10; break;
+						case 'g':
+							car.ctrl.targetVelocity -= 10; 
+							if(car.ctrl.targetVelocity <0)
+								car.ctrl.targetVelocity =0;							
+							break;
+						case 'x':goto endOut; break;
 
 					}
+					motLeft = ((U32)car.ctrl.targetVelocity * (U32)car.ctrl.biasVelocity)/500;
+					motRight = ((U32)car.ctrl.targetVelocity * (1000-(U32)car.ctrl.biasVelocity))/500;
+				vfnSet_Duty_Opwm(6,motLeft);
+				vfnSet_Duty_Opwm(7,motRight);
+						EMIOS_0.CH[4].CBDR.R = 1500 + car.ctrl.targetServoPos; 
+					
 				 }
+				 endOut:
+				 	SIU.PGPDO[0].R = 0x00000000;		/* Enable Right the motors */
 			break;
 			
 			
@@ -146,14 +210,13 @@ void task_5msec()
 
 void task_10msec()
 {
-	
 	taskCTR_10msec=0;
 }
 
 
 void task_20msec()
 {
-	vfnSet_Servo(car.targetServoPos);
+	//vfnSet_Servo(car.ctrl.targetServoPos);
 	taskCTR_20msec=0;
 }
 
@@ -200,7 +263,7 @@ void task_1000msec()
 
 void Delay(void)
 {
-  for(dly=0;dly<250;dly++);
+  for(dly=0;dly<105;dly++);
 }
 
 void Delaylong(void)
@@ -215,7 +278,7 @@ void Delaylonglong(void)
 
 void Delaycamera(void)
 {
-  for(lly=0;lly<10;lly++) Delaylong();
+  for(lly=0;lly<40;lly++) Delay();
 }
 
 void Delaywait(void)
