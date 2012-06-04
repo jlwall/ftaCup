@@ -8,8 +8,8 @@
 
 
 /********************* Definitions **************************/
-#define	CHANNEL_CK			7
-#define CHANNEL_SI    		9
+#define	CHANNEL_CK			5
+#define CHANNEL_SI    		3
 #define CHANNEL_TRIG   		10
 #define CAM_CNT_CHAN   		8
 #define CAM_ADC_CHAN   		0
@@ -20,7 +20,6 @@
 uint16_t  	u16PulseWidthMeasure;
 uint16_t  	u16DeltaX ;
 uint16_t  	u16PulseWidth ;
-uint16_t	u16Pixel[128];
 uint16_t 	u16CamCounter;
 uint8_t 	u8i;
 uint8_t		u8scandone;
@@ -30,7 +29,7 @@ uint16_t		pipe=500;
 
 
 
-
+extern volatile uint8_t Result[128];                	/* Read converstion result from ADC input ANS0 */
 
 
 /**************************************************************************************************************/
@@ -41,12 +40,12 @@ uint16_t		pipe=500;
 void vfnSetup_CamLin(void)
 {
 
-	vfnInit_Emios_Output_Pad(PCR_EMIOS_0_7);	/* Path configuration, Emios Output for CK signal */
-	vfnInit_Emios_Output_Pad(PCR_EMIOS_0_9);	/* Path configuration, Emios Output for SI signal */
+	vfnInit_Emios_Output_Pad(27);	/* Path configuration, Emios Output for CK signal */
+	vfnInit_Emios_Output_Pad(29);	/* Path configuration, Emios Output for SI signal */
 
-	vfnSetup_Emios_0();                  		/* Main Configuration Register to initialize Emios */
- 	vfnInit_Emios_0_Mcb(0,4); 					/* Define Emios Channel as Modulus Counter for CK pulse*/
- 	vfnInit_Emios_0_Mcb(8,2000); 				/* Define Emios Channel as Modulus Counter for SI pulse*/
+//	vfnSetup_Emios_0();                  		/* Main Configuration Register to initialize Emios */
+ //	vfnInit_Emios_0_Mcb(0,4); 					/* Define Emios Channel as Modulus Counter for CK pulse*/
+// 	vfnInit_Emios_0_Mcb(8,2000); 				/* Define Emios Channel as Modulus Counter for SI pulse*/
 
 	
 	vfnInit_Emios_0_Opwm(CHANNEL_CK, 1, 3);		/* Define Emios Channel as Opwm, define A and B parameters as 0 and 2 to generate CK signal for the camera */
@@ -159,69 +158,21 @@ void vfnInit_CamLin_Adc(void)
 
 }
 
- 
-uint8_t u8Capture_Pixel_Values(void)
+uint16_t u16Read_Adc(chan, max)
 {
 	
-	u16CamCounter = (uint16_t)EMIOS_0.CH[CAM_CNT_CHAN].CCNTR.B.CCNTR;		
-	
-	if	(u16CamCounter <= 1996 && u16CamCounter > pipe)
-	{
-		vfnSet_Duty_Opwm(CHANNEL_CK,1);
-	}
-	else
-	{
-		vfnSet_Duty_Opwm(CHANNEL_CK,3);
-		u8i=0;
-		u8scandone=0;
-	}
-	
-	while (u8i<128)
-	{
-		uint16_t	u16cont3;	
-
-		u16cont3= (uint16_t)u16Read_Adc(CAM_ADC_CHAN, 1023);
-		if (u16cont3 != 1024)
-		{
-			u16Pixel[u8i]=u16cont3;
-			u8i++;	
+	ADC.MCR.B.NSTART=1;     		/* Trigger normal conversions for ADC0 */
+			while (ADC.MCR.B.NSTART == 1) {};
+			return (uint16_t)ADC.CDR[chan].B.CDATA;
 			
-			u16CamCounter = (uint16_t)EMIOS_0.CH[CAM_CNT_CHAN].CCNTR.B.CCNTR;		
-			if	(u16CamCounter <= 1996 && u16CamCounter > pipe)
-			{
-//				vfnSet_Duty_Opwm(CHANNEL_CK,1);
-			}
-			else
-			{
-				vfnSet_Duty_Opwm(CHANNEL_CK,3);
-			}
-		}
-
-
-	}
+			
+}
+ 
+void u8Capture_Pixel_Values(void)
+{
 	
-	if(u8i==128)
-	{
-		killo++;
-		if(killo>1000)
-			pipe++;
-		
-		if(pipe>1000)
-			pipe=10;
-		
-	}
-	
-	u16CamCounter= (uint16_t)EMIOS_0.CH[CAM_CNT_CHAN].CCNTR.B.CCNTR;
-
-	if(u16CamCounter>1996)
-	{
-		vfnSet_Duty_Opwm(CHANNEL_CK,3);
-		u8i=0;
-		u8scandone=0;
-	}
-
-	if (u8scandone==0)
-	{
+	uint8_t i,j;	
+	uint32_t adcdata;
 	uint16_t	u16cont=2;
 	uint16_t	u16minval=1023;
 	uint16_t	u16minpos=0;
@@ -229,11 +180,45 @@ uint8_t u8Capture_Pixel_Values(void)
 	uint16_t	u16corner1;
 	uint16_t	u16corner2;
 	
+	
+	SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
+	SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
+	for(j=0;j<3;j++)
+		{
+		SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
+		SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
+		SIU.PGPDO[0].R &= ~0x00000014;		/* All port line low */
+		SIU.PGPDO[0].R |= 0x00000010;		/* Sensor read start High */
+		Delay();
+		SIU.PGPDO[0].R |= 0x00000004;		/* Sensor Clock High */
+		Delay();
+		SIU.PGPDO[0].R &= ~0x00000010;		/* Sensor read start Low */ 
+		Delay();
+		SIU.PGPDO[0].R &= ~0x00000004;		/* Sensor Clock Low */
+		Delay();
+		for (i=0;i<128;i++)
+			{	
+			Delay();
+			SIU.PGPDO[0].R |= 0x00000004;	/* Sensor Clock High */
+			ADC.MCR.B.NSTART=1;     		/* Trigger normal conversions for ADC0 */
+			//while (ADC.MCR.B.NSTART == 1) 
+		//	{};
+			adcdata = ADC.CDR[0].B.CDATA;
+			Delay();
+			SIU.PGPDO[0].R &= ~0x00000004;	/* Sensor Clock Low */
+			Result[i] = (uint8_t)(adcdata >> 2);		
+			}
+		Delaycamera();
+		}
+
+
+
+	
 		while(u16cont<126)
 		{
-			if(u16minval>u16Pixel[u16cont])
+			if(u16minval>Result[u16cont])
 			{
-				u16minval=u16Pixel[u16cont];
+				u16minval=Result[u16cont];
 				u16minpos=u16cont;	
 			}
 		u16cont++;	
@@ -250,11 +235,11 @@ uint8_t u8Capture_Pixel_Values(void)
 		
 		u16corner1=u16minpos;
 		u16corner2=u16minpos;
-	  	while(((u16Pixel[u16corner1])<(u16minval+u16treshold)) && (u16corner1<128))
+	  	while(((Result[u16corner1])<(u16minval+u16treshold)) && (u16corner1<128))
 			{
 			u16corner1--;	
 			}
-		while(((u16Pixel[u16corner2])<(u16minval+u16treshold)) && (u16corner2>0))
+		while(((Result[u16corner2])<(u16minval+u16treshold)) && (u16corner2>0))
 			{
 			u16corner2++;	
 			}
@@ -262,11 +247,6 @@ uint8_t u8Capture_Pixel_Values(void)
 		u16PulseWidth = u16corner2 - u16corner1;
 		u16DeltaX = (u16corner2 + u16corner1)/2;
 		
-		return 1;
-	}
-	else
-	{
-		return 1;	
-	}
+
 }
   			

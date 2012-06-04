@@ -54,7 +54,6 @@ uint16_t u16Pulse_Width(void);
   \return	Last valid value of i16Delta_X.
 */
 uint16_t u16Delta_X(void);
-
-
+void u8Capture_Pixel_Values(void);
 
 
