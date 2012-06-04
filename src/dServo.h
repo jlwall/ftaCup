@@ -27,7 +27,7 @@
   				right).
   \return	Null.
 */
-void vfnSet_Servo(uint16_t u16Position, uint16_t u16MinVal, uint16_t u16MaxVal);
+void vfnSet_Servo(S16 u16Position) ;
 
 /**
   \brief	Initializes the MCB counters for both the servo motor and the

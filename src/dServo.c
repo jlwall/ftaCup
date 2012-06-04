@@ -52,10 +52,10 @@ void vfnInit_Servo(void)
 	vfnSetup_Emios_0();
 	vfnInit_Emios_0();   
 	  					
-  	vfnInit_Emios_0_Mcb(SERVO_MCB_CHANNEL,20000); 							/* Set channel as MCB  */	
-  	vfnInit_Emios_0_Mcb(MOTOR_MCB_CHANNEL,5000); 							/* Set channel as MCB  */	
+	  					
+  	vfnInit_Emios_0_Mcb(SERVO_MCB_CHANNEL,2000); 							/* Set channel as MCB  */	
   	
-  	vfnInit_Emios_0_Opwm(SERVO_CTRL,0,1000);				/* Set channel as OPWM */
-	vfnInit_Emios_Output_Pad(SERVO_CTRL_PCR);				/* Set as output in SIU */
+  	vfnInit_Emios_0_Opwm(SERVO_CTRL,0,800);				/* Set channel as OPWM */
+	vfnInit_Emios_Output_Pad(28);				/* Set as output in SIU */
 }
 /*************************************************************/
