@@ -56,6 +56,11 @@
     typedef unsigned short U16;
     typedef volatile signed short vS16;
     typedef volatile unsigned short vU16;
+    
+     typedef signed long S32;
+    typedef unsigned long U32;
+    typedef volatile signed long vS32;
+    typedef volatile unsigned long vU32;
  
 
 #else
@@ -81,6 +86,11 @@
     typedef unsigned short U16;
     typedef volatile signed short vS16;
     typedef volatile unsigned short vU16;
+    
+    typedef signed long S32;
+    typedef unsigned long U32;
+    typedef volatile signed long vS32;
+    typedef volatile unsigned long vU32;
 
 #else
 
@@ -111,6 +121,11 @@
     typedef unsigned short U16;
     typedef volatile signed short vS16;
     typedef volatile unsigned short vU16;
+    
+ typedef signed long S32;
+    typedef unsigned long U32;
+    typedef volatile signed long vS32;
+    typedef volatile unsigned long vU32;
 
 
 #endif
