@@ -15,27 +15,30 @@ namespace fsSim
 
         class carControl
         {
-            public double center;
-            public double error;
-            public double errorRate;
-            public double imem;
-            public double dterm;
+         
+            public Int16 errorRate;
+            public float iTerm;
+            public float dterm;          
+
+            public float radiusTarget;
+            public Int16 servoDegTarget;
+            public UInt16 velTarget;
+
+            public byte center;
+            public Int16 error;
+            public byte c1, c2, c3, c4;
 
             public bool inCorner;
             public bool turnLeft;
             public bool turnRight;
-
-            public double radiusTarget;
-
-            public double c1, c2, c3, c4;
             
         }
 
         class carSensor
         {
             public byte[] sensorV;
-            public double width;
-            public double posX;
+            public float width;
+            public float posX;
             public int leftOn;
             public int rightOn;
             public int senseWide;
@@ -43,13 +46,18 @@ namespace fsSim
 
         class calibrationS
         {
-            public double servGain;
-            public double servGainIgain;
-            public double servGainDTerm;
-            public int errorTol;
-            public double maxSpeed;
-            public double lostSpeed;
-            public double maxAccel;
+            public float servGain;
+            public float servGainIgain;
+            public float servGainDTerm;
+            public Int16 errorTol;
+            public UInt16 maxSpeed;
+            public UInt16 lostSpeed;
+            public float maxAccel;
+
+            public float setupTrack;
+            public float setupWheelBase;
+            public float servoArm;
+            public float steeringNuckle;
         }
 
         class carStruct
@@ -58,20 +66,15 @@ namespace fsSim
             public double y; // pos y in mm
             public double dir; //radian Direction
             
-            public double turnRad;
-            public double vel; //mm/s
-            public double velTarget;
-            public double velRLratio;
-            public double accel;
+            public float turnRad;
+            public float vel; //mm/s
 
-            public double servoDeg;
+            public float velRLratio;
+            public float accel;
 
-            public double setupTrack;
-            public double setupWheelBase;
-            public double servoArm;
-            public double steeringNuckle;
+            public float servoDeg;
 
-            public double servoDegTarget;
+            
             public carSensor lightSense;
             public carControl ctrl;
             public calibrationS cal;
@@ -333,13 +336,13 @@ namespace fsSim
 
             if ((car.servoDeg < 1) & (car.servoDeg > -1))
             {
-                car.turnRad = Double.PositiveInfinity;
+                car.turnRad = float.PositiveInfinity;
             }
             else
             {
 
-                
-                car.turnRad = car.setupTrack / 2 + (car.setupWheelBase / Math.Sin(Math.Sinh((car.servoArm * Math.Sin(car.servoDeg / 180 * Math.PI)) / car.steeringNuckle)));
+
+                car.turnRad = car.cal.setupTrack / 2 + (car.cal.setupWheelBase / (float)Math.Sin(Math.Sinh((car.cal.servoArm * Math.Sin(car.servoDeg / 180 * Math.PI)) / car.cal.steeringNuckle)));
 
             //    if (car.servoDeg < 0)
               //      car.turnRad = -car.turnRad;
@@ -435,19 +438,19 @@ namespace fsSim
             car.ctrl.c3 = car.ctrl.c2;
             car.ctrl.c2 = car.ctrl.c1;
             car.ctrl.c1 = car.ctrl.center;
-            car.ctrl.center = car.lightSense.leftOn + car.lightSense.senseWide / 2;
+            car.ctrl.center = (byte)(car.lightSense.leftOn + car.lightSense.senseWide / 2);
 
-            car.ctrl.errorRate = ((car.ctrl.error * 4 / 5) + (64 - car.ctrl.center)) / 5;
+            car.ctrl.errorRate = (Int16)(((car.ctrl.error * 4 / 5) + (64 - car.ctrl.center)) / 5);
 
-            car.ctrl.error = 64 - car.ctrl.center;
+            car.ctrl.error = (Int16)(64 - car.ctrl.center);
 
             if ( (Math.Abs(car.ctrl.error) < car.cal.errorTol*2) & (Math.Abs(car.turnRad )> 5000))
-                car.ctrl.imem = 0;
+                car.ctrl.iTerm = 0;
             else
-            car.ctrl.imem += car.ctrl.errorRate;
+            car.ctrl.iTerm += car.ctrl.errorRate;
 
 
-            car.ctrl.dterm = (car.ctrl.dterm*4/4000 + (car.ctrl.c4 - car.ctrl.center))/5 * 1000;
+            car.ctrl.dterm = ((car.ctrl.center - car.ctrl.c4) * 4 + car.ctrl.dterm)/5;//(car.ctrl.dterm*4/4000 + (car.ctrl.c4 - car.ctrl.center))/5 * 1000;
          
 
 //            Console.WriteLine(car.ctrl.center.ToString());
@@ -456,40 +459,40 @@ namespace fsSim
         void updateControls()
         {
             //process Servo Lag
-            double servoError = car.servoDegTarget - car.servoDeg;
+            float servoError = car.ctrl.servoDegTarget - car.servoDeg;
             
             //max rate of servo
             if (servoError > 2.67)
-                servoError = 2.67;
+                servoError = 2.67f;
 
             if (servoError < -2.67)
-                servoError = -2.67;
+                servoError = -2.67f;
             car.servoDeg = car.servoDeg + servoError;
             if (car.servoDeg > 65) car.servoDeg = 65;
             if (car.servoDeg < -65) car.servoDeg = -65;
 
             //process Speed
-            car.vel += (car.velTarget - car.vel) / 850;
+            car.vel += (car.ctrl.velTarget - car.vel) / 850;
 
           
                 if (car.ctrl.error > car.cal.errorTol)
                 {
-                    car.ctrl.radiusTarget = ((5000-(double)car.ctrl.errorRate * car.cal.servGain) - car.ctrl.imem * car.cal.servGainIgain - car.ctrl.dterm * car.cal.servGainDTerm);
+                    car.ctrl.radiusTarget = ((4000-((float)car.ctrl.errorRate) * car.cal.servGain) - car.ctrl.iTerm * car.cal.servGainIgain - car.ctrl.dterm * car.cal.servGainDTerm);
                     if (car.ctrl.radiusTarget < 300)
                         car.ctrl.radiusTarget = 300;
                 }
                 else if (car.ctrl.error < -car.cal.errorTol)
                 {
-                    car.ctrl.radiusTarget = -((5000 + (double)car.ctrl.errorRate * car.cal.servGain) + car.ctrl.imem * car.cal.servGainIgain + car.ctrl.dterm * car.cal.servGainDTerm);
+                    car.ctrl.radiusTarget = -((4000 + ((float)car.ctrl.errorRate) * car.cal.servGain) + car.ctrl.iTerm * car.cal.servGainIgain + car.ctrl.dterm * car.cal.servGainDTerm);
                     if (car.ctrl.radiusTarget > -300)
                         car.ctrl.radiusTarget = -300;
                 }
                 else
                 {
                     if(car.ctrl.error>0)
-                    car.ctrl.radiusTarget = 5000;
+                    car.ctrl.radiusTarget = 4000;
                     else
-                        car.ctrl.radiusTarget = -5000;
+                        car.ctrl.radiusTarget = -4000;
                 }
 
                 //20mSecSevoPWM Update
@@ -498,48 +501,48 @@ namespace fsSim
 
                 if (rem == 0)
                 {
-                    double stn=0;
+                    float stn=0;
                 if (Math.Abs(car.ctrl.radiusTarget) < 6000)
                 {
                     if (car.ctrl.radiusTarget > 0)
-                        stn = 76970 * Math.Pow(car.ctrl.radiusTarget, -1.239);
+                        stn = 76970 * (float)Math.Pow(car.ctrl.radiusTarget, -1.239);
                     else
-                       stn = -76970 * Math.Pow(-car.ctrl.radiusTarget, -1.239);
+                        stn = -76970 * (float)Math.Pow(-car.ctrl.radiusTarget, -1.239);
 
                 }
 
 
-                car.servoDegTarget = (stn*3 + car.servoDegTarget ) / 4;
+                car.ctrl.servoDegTarget = (Int16)((stn * 3 + car.ctrl.servoDegTarget) / 4);
 
 
 
-                if (car.servoDegTarget > 70) 
-                    car.servoDegTarget = 70;
-                if (car.servoDegTarget < -70) 
-                    car.servoDegTarget = -70;
+                if (car.ctrl.servoDegTarget > 70) 
+                    car.ctrl.servoDegTarget = 70;
+                if (car.ctrl.servoDegTarget < -70) 
+                    car.ctrl.servoDegTarget = -70;
 
             }
 
 
                 if (Math.Abs(car.accel) < 400 & Math.Abs(car.ctrl.error) < 30)
                 {
-                    double maxV = Math.Sqrt(car.cal.maxAccel*9810 * Math.Abs(car.turnRad));
+                    float maxV = (float)Math.Sqrt(car.cal.maxAccel*9810 * Math.Abs(car.turnRad));
                     if (maxV < car.cal.maxSpeed)
-                        car.velTarget = maxV;
+                        car.ctrl.velTarget = (UInt16)maxV;
                     else
-                        car.velTarget = car.cal.maxSpeed;
+                        car.ctrl.velTarget = (UInt16)car.cal.maxSpeed;
 
                 }
                 else if (Math.Abs(car.ctrl.error) < 50)
                 {
-                    double maxV = Math.Sqrt(car.cal.maxAccel * 9810 * Math.Abs( car.turnRad));
+                    float maxV = (float)Math.Sqrt(car.cal.maxAccel * 9810 * Math.Abs( car.turnRad));
                     if (maxV < car.cal.maxSpeed)
-                        car.velTarget = maxV;
+                        car.ctrl.velTarget = (UInt16)maxV;
                     else
-                        car.velTarget = car.cal.maxSpeed;
+                        car.ctrl.velTarget = (UInt16)car.cal.maxSpeed;
                 }
                 else
-                    car.velTarget = car.cal.lostSpeed;
+                    car.ctrl.velTarget = (UInt16)car.cal.lostSpeed;
 
 
         }
@@ -568,14 +571,15 @@ namespace fsSim
             car.vel = 0;//200mm/s
             car.lightSense = new carSensor();
             car.lightSense.sensorV = new byte[128];
-            car.velTarget = 800;
-            car.velRLratio = 0.5;
+            car.ctrl.velTarget = 800;
+            car.velRLratio = 0.5f;
 
+            car.cal = new calibrationS();
 
-            car.setupTrack = 190;
-            car.setupWheelBase = 270;
-            car.servoArm = 25;
-            car.steeringNuckle = 20;
+            car.cal.setupTrack = 190;
+            car.cal.setupWheelBase = 270;
+            car.cal.servoArm = 25;
+            car.cal.steeringNuckle = 20;
 
 
 
@@ -584,51 +588,50 @@ namespace fsSim
 
             car.ctrl = new carControl();
             car.ctrl.center = 64;
-            car.ctrl.imem = 0;
-            car.cal = new calibrationS();
+            car.ctrl.iTerm = 0;
             runStep = 0;
 
-            car.cal.servGain = 1.7;
-            car.cal.servGainIgain = 2.0;
+            car.cal.servGain = 1.7f;
+            car.cal.servGainIgain = 2.0f;
             car.cal.errorTol = 3;
 
-            try { car.cal.servGain = Convert.ToDouble(txtGainServo.Text); }
+            try { car.cal.servGain = Convert.ToSingle(txtGainServo.Text); }
             catch (Exception ee)
             {
             }
 
-            try { car.cal.servGainIgain = Convert.ToDouble(txtGainServoDT.Text); }
+            try { car.cal.servGainIgain = Convert.ToSingle(txtGainServoDT.Text); }
             catch (Exception ee)
             {
             }
 
-            try { car.cal.errorTol = Convert.ToInt32(txtErrorTol.Text); }
+            try { car.cal.errorTol = (byte)Convert.ToInt32(txtErrorTol.Text); }
             catch (Exception ee)
             {
             }
 
-            try { car.cal.servGainDTerm = Convert.ToDouble(txtGainServoDGain.Text); }
+            try { car.cal.servGainDTerm = Convert.ToSingle(txtGainServoDGain.Text); }
             catch (Exception ee)
             {
             }
 
-            try { car.cal.maxSpeed = Convert.ToDouble(txtMavV.Text); }
+            try { car.cal.maxSpeed = Convert.ToUInt16(txtMavV.Text); }
             catch (Exception ee)
             {
             }
 
-            try { car.cal.lostSpeed = Convert.ToDouble(txtLostV.Text); }
+            try { car.cal.lostSpeed = Convert.ToUInt16(txtLostV.Text); }
             catch (Exception ee)
             {
             }
 
-            try { car.cal.maxAccel = Convert.ToDouble(txtMaxAcc.Text); }
+            try { car.cal.maxAccel = Convert.ToSingle(txtMaxAcc.Text); }
             catch (Exception ee)
             {
             }
 
             if (errorSweep != 0)
-                car.cal.errorTol = errorSweep;
+                car.cal.errorTol = (byte)errorSweep;
 
 
 
@@ -650,11 +653,11 @@ namespace fsSim
                 sr.Write(car.x.ToString("F3") + ",");
                 sr.Write(car.y.ToString("F3") + ",");
                 sr.Write(car.vel.ToString("F3") + ",");
-                sr.Write(car.velTarget.ToString("F3") + ",");
+                sr.Write(car.ctrl.velTarget.ToString("F3") + ",");
                 sr.Write((car.accel/1000/9.81).ToString("F3") + ",");
                 sr.Write(car.turnRad.ToString("F3") + ",");
                 sr.Write(car.servoDeg.ToString("F3") + ",");
-                sr.Write(car.servoDegTarget.ToString("F3") + ",");
+                sr.Write(car.ctrl.servoDegTarget.ToString("F3") + ",");
                 sr.Write(car.dir.ToString("F3") + ",");
                 sr.Write(car.lightSense.leftOn.ToString() + ",");
                 sr.Write(car.lightSense.rightOn.ToString() + ",");
@@ -679,7 +682,7 @@ namespace fsSim
                 else
                     sr.Write("0,");
                 
-                sr.WriteLine(car.ctrl.imem.ToString() + ",");
+                sr.WriteLine(car.ctrl.iTerm.ToString() + ",");
 
                 lapTime = i / 1000f;
                 carPos cc = new carPos();
@@ -717,6 +720,97 @@ namespace fsSim
         private void label6_Click(object sender, EventArgs e)
         {
 
+        }
+
+
+        byte[] spRxData = new byte[512];
+        int spEnd = 0;
+        int spRead = 0;
+        private void spCar_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
+        {
+            int rB = spCar.BytesToRead;
+
+            if ((rB + spEnd) >= spRxData.Length)
+            {
+                int rol = rB + spEnd - spRxData.Length;
+
+                spCar.Read(spRxData, spEnd, rol);
+                spEnd += rol;
+
+                spCar.Read(spRxData, spEnd, rB-rol);
+                spEnd += rB-rol;
+            }
+            else
+            {
+                spCar.Read(spRxData, spEnd, rB);
+                spEnd += rB;
+            }
+
+        }
+
+
+        private void parseUartData()
+        {
+            //packet = 0x01|0x02|DLC|data|0x55
+
+
+            for (int i = spRead; ((i < spRead + spRxData.Length) && (i<spEnd)); i++)
+            {   
+                if (spRxData[(i& 0x1FF)] == 0x01)
+                {
+                    if (spRxData[((i+1)& 0x1FF)] == 0x02)
+                    {
+                        int dlc = (int)spRxData[((i+2)& 0x1FF)];
+                        byte[] packet = new byte[dlc];
+                        for (int r = 0; r < dlc; r++)
+                        {
+                            packet[r] = spRxData[((i + 3 + r) & 0x1FF)];
+
+                        }
+                        if(spRxData[((i + 3 + dlc) & 0x1FF)]==0x55)
+                        {
+                            spRead += 4 + dlc;
+                            if (spRead >= spRxData.Length)
+                                spRead -= spRxData.Length;
+                            processCommand(packet);
+                        }
+
+                    }
+                }
+
+
+            }
+
+
+
+        }
+
+        private void processCommand(byte[] data)
+        {
+            switch (data[0])
+            {
+                case 0x10:
+
+                    break;
+
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            spRxData[0] = 0x00;
+            spRxData[1] = 0x01;
+            spRxData[2] = 0x02;
+            spRxData[3] = 0x04;
+            spRxData[4] = 0x0a;
+            spRxData[5] = 0x0b;
+            spRxData[6] = 0x0c;
+            spRxData[7] = 0x0d;
+            spRxData[8] = 0x55;
+
+            spRead = 0;
+            spEnd = 8;
+            parseUartData();
         }
 
 

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.button1 = new System.Windows.Forms.Button();
             this.pbTrack = new System.Windows.Forms.PictureBox();
             this.button2 = new System.Windows.Forms.Button();
@@ -47,6 +48,8 @@
             this.txtMaxAcc = new System.Windows.Forms.TextBox();
             this.txtLostV = new System.Windows.Forms.TextBox();
             this.txtMavV = new System.Windows.Forms.TextBox();
+            this.spCar = new System.IO.Ports.SerialPort(this.components);
+            this.button4 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pbTrack)).BeginInit();
             this.SuspendLayout();
             // 
@@ -103,7 +106,7 @@
             this.txtGainServo.Name = "txtGainServo";
             this.txtGainServo.Size = new System.Drawing.Size(100, 20);
             this.txtGainServo.TabIndex = 5;
-            this.txtGainServo.Text = "200";
+            this.txtGainServo.Text = "400";
             // 
             // txtGainServoDT
             // 
@@ -111,7 +114,7 @@
             this.txtGainServoDT.Name = "txtGainServoDT";
             this.txtGainServoDT.Size = new System.Drawing.Size(100, 20);
             this.txtGainServoDT.TabIndex = 6;
-            this.txtGainServoDT.Text = "2";
+            this.txtGainServoDT.Text = "4";
             // 
             // txtErrorTol
             // 
@@ -127,7 +130,7 @@
             this.txtGainServoDGain.Name = "txtGainServoDGain";
             this.txtGainServoDGain.Size = new System.Drawing.Size(100, 20);
             this.txtGainServoDGain.TabIndex = 8;
-            this.txtGainServoDGain.Text = "2";
+            this.txtGainServoDGain.Text = "5";
             // 
             // label2
             // 
@@ -207,21 +210,37 @@
             this.txtLostV.Name = "txtLostV";
             this.txtLostV.Size = new System.Drawing.Size(100, 20);
             this.txtLostV.TabIndex = 17;
-            this.txtLostV.Text = "200";
+            this.txtLostV.Text = "600";
             // 
             // txtMavV
             // 
-            this.txtMavV.Location = new System.Drawing.Point(1089, 244);
+            this.txtMavV.Location = new System.Drawing.Point(1089, 240);
             this.txtMavV.Name = "txtMavV";
             this.txtMavV.Size = new System.Drawing.Size(100, 20);
             this.txtMavV.TabIndex = 18;
-            this.txtMavV.Text = "600";
+            this.txtMavV.Text = "1650";
+            // 
+            // spCar
+            // 
+            this.spCar.BaudRate = 115200;
+            this.spCar.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(this.spCar_DataReceived);
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(1032, 590);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(105, 22);
+            this.button4.TabIndex = 19;
+            this.button4.Text = "SerialPrep";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1246, 644);
+            this.ClientSize = new System.Drawing.Size(1246, 769);
+            this.Controls.Add(this.button4);
             this.Controls.Add(this.txtMavV);
             this.Controls.Add(this.txtLostV);
             this.Controls.Add(this.txtMaxAcc);
@@ -271,6 +290,8 @@
         private System.Windows.Forms.TextBox txtMaxAcc;
         private System.Windows.Forms.TextBox txtLostV;
         private System.Windows.Forms.TextBox txtMavV;
+        private System.IO.Ports.SerialPort spCar;
+        private System.Windows.Forms.Button button4;
     }
 }
 
