@@ -31,6 +31,8 @@ namespace fsSim
             public bool inCorner;
             public bool turnLeft;
             public bool turnRight;
+
+            public byte ctrlMode;
             
         }
 
@@ -42,6 +44,7 @@ namespace fsSim
             public int leftOn;
             public int rightOn;
             public int senseWide;
+            public byte valid;
         }
 
         class calibrationS
@@ -49,15 +52,18 @@ namespace fsSim
             public float servGain;
             public float servGainIgain;
             public float servGainDTerm;
-            public Int16 errorTol;
-            public UInt16 maxSpeed;
-            public UInt16 lostSpeed;
-            public float maxAccel;
-
             public float setupTrack;
             public float setupWheelBase;
             public float servoArm;
             public float steeringNuckle;
+            public float maxAccel;
+
+            public Int16 errorTol;
+            public UInt16 maxSpeed;
+            public UInt16 lostSpeed;
+          
+
+        
         }
 
         class carStruct
@@ -730,21 +736,31 @@ namespace fsSim
         {
             int rB = spCar.BytesToRead;
 
-            if ((rB + spEnd) >= spRxData.Length)
+            if ((rB + spEnd) > spRxData.Length)
             {
-                int rol = rB + spEnd - spRxData.Length;
+                int rol = - spEnd + spRxData.Length;
 
                 spCar.Read(spRxData, spEnd, rol);
                 spEnd += rol;
 
+                if (spEnd >= 512)
+                    spEnd = 0;
+
                 spCar.Read(spRxData, spEnd, rB-rol);
                 spEnd += rB-rol;
+                if (spEnd >= 512)
+                    spEnd = 0;
             }
             else
             {
                 spCar.Read(spRxData, spEnd, rB);
                 spEnd += rB;
+
+                if(spEnd>=512)
+                    spEnd = 0;
             }
+
+            parseUartData();
 
         }
 
@@ -752,9 +768,12 @@ namespace fsSim
         private void parseUartData()
         {
             //packet = 0x01|0x02|DLC|data|0x55
+            int spEnde = spEnd;
 
+            if (spEnd < spRead)
+                spEnde += spRxData.Length;
 
-            for (int i = spRead; ((i < spRead + spRxData.Length) && (i<spEnd)); i++)
+            for (int i = spRead; ((i < spRead + spRxData.Length) && (i < spEnde)); i++)
             {   
                 if (spRxData[(i& 0x1FF)] == 0x01)
                 {
@@ -771,7 +790,7 @@ namespace fsSim
                         {
                             spRead += 4 + dlc;
                             if (spRead >= spRxData.Length)
-                                spRead -= spRxData.Length;
+                                spRead = spRead -spRxData.Length;
                             processCommand(packet);
                         }
 
@@ -787,9 +806,24 @@ namespace fsSim
 
         private void processCommand(byte[] data)
         {
+            if (data.Length < 1)
+                return;
             switch (data[0])
             {
-                case 0x10:
+                case 0x50:
+                    car.lightSense.leftOn = data[1];
+                    car.lightSense.rightOn = data[2];
+                    car.lightSense.width = data[3];
+                    car.ctrl.center = data[4];
+
+                    car.ctrl.velTarget = (UInt16)((UInt16)data[6] + 256 * (UInt16)data[5]);
+
+                    car.ctrl.servoDegTarget = (Int16)((UInt16)data[8] + 256 * (UInt16)data[7]);
+                    car.ctrl.servoDegTarget = (Int16)((UInt16)data[12] + 256 * (UInt16)data[11]);
+                    car.ctrl.ctrlMode = data[13];
+                    car.lightSense.valid = data[14];
+
+                  
 
                     break;
 
@@ -798,6 +832,10 @@ namespace fsSim
 
         private void button4_Click(object sender, EventArgs e)
         {
+            spCar.PortName = "COM5";
+            spCar.Open();
+            timerUpdate.Start();
+            /*
             spRxData[0] = 0x00;
             spRxData[1] = 0x01;
             spRxData[2] = 0x02;
@@ -810,7 +848,73 @@ namespace fsSim
 
             spRead = 0;
             spEnd = 8;
-            parseUartData();
+            parseUartData();*/
+        }
+
+        private void timerUpdate_Tick(object sender, EventArgs e)
+        {
+            txtSleftOn.Text = car.lightSense.leftOn.ToString();
+            txtSrightOn.Text = car.lightSense.rightOn.ToString();
+            txtSWidth.Text = car.lightSense.width.ToString();
+            txtSCenter.Text = car.ctrl.center.ToString() + " : " + car.lightSense.valid.ToString();
+            txtMode.Text = car.ctrl.ctrlMode.ToString();
+
+            txtCtargetVel.Text = car.ctrl.velTarget.ToString();
+            txtCtargetSer.Text = car.ctrl.servoDegTarget.ToString();
+            textBox2.Text = car.ctrl.error.ToString();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            if (spCar.IsOpen)
+                spCar.Write("0");
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            if (spCar.IsOpen)
+                spCar.Write("1");
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            if (spCar.IsOpen)
+                spCar.Write("2");
+        }
+
+        private void button12_Click(object sender, EventArgs e)
+        {
+
+            if (spCar.IsOpen)
+                spCar.Write("x");
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+
+            if (spCar.IsOpen)
+                spCar.Write("t");
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+
+            if (spCar.IsOpen)
+                spCar.Write("g");
+        }
+
+        private void button11_Click(object sender, EventArgs e)
+        {
+
+            if (spCar.IsOpen)
+                spCar.Write("h");
+        }
+
+        private void button10_Click(object sender, EventArgs e)
+        {
+
+            if (spCar.IsOpen)
+                spCar.Write("f");
         }
 
 

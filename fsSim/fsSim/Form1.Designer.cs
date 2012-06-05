@@ -50,6 +50,34 @@
             this.txtMavV = new System.Windows.Forms.TextBox();
             this.spCar = new System.IO.Ports.SerialPort(this.components);
             this.button4 = new System.Windows.Forms.Button();
+            this.colorDialog1 = new System.Windows.Forms.ColorDialog();
+            this.txtSleftOn = new System.Windows.Forms.TextBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.txtSrightOn = new System.Windows.Forms.TextBox();
+            this.label10 = new System.Windows.Forms.Label();
+            this.txtSWidth = new System.Windows.Forms.TextBox();
+            this.label11 = new System.Windows.Forms.Label();
+            this.txtSCenter = new System.Windows.Forms.TextBox();
+            this.label12 = new System.Windows.Forms.Label();
+            this.timerUpdate = new System.Windows.Forms.Timer(this.components);
+            this.txtMode = new System.Windows.Forms.TextBox();
+            this.label13 = new System.Windows.Forms.Label();
+            this.button5 = new System.Windows.Forms.Button();
+            this.button6 = new System.Windows.Forms.Button();
+            this.button7 = new System.Windows.Forms.Button();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.label14 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.label15 = new System.Windows.Forms.Label();
+            this.txtCtargetSer = new System.Windows.Forms.TextBox();
+            this.label16 = new System.Windows.Forms.Label();
+            this.txtCtargetVel = new System.Windows.Forms.TextBox();
+            this.label17 = new System.Windows.Forms.Label();
+            this.button8 = new System.Windows.Forms.Button();
+            this.button9 = new System.Windows.Forms.Button();
+            this.button10 = new System.Windows.Forms.Button();
+            this.button11 = new System.Windows.Forms.Button();
+            this.button12 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pbTrack)).BeginInit();
             this.SuspendLayout();
             // 
@@ -223,6 +251,7 @@
             // spCar
             // 
             this.spCar.BaudRate = 115200;
+            this.spCar.PortName = "COM8";
             this.spCar.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(this.spCar_DataReceived);
             // 
             // button4
@@ -235,11 +264,274 @@
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
+            // txtSleftOn
+            // 
+            this.txtSleftOn.Location = new System.Drawing.Point(881, 628);
+            this.txtSleftOn.Name = "txtSleftOn";
+            this.txtSleftOn.Size = new System.Drawing.Size(100, 20);
+            this.txtSleftOn.TabIndex = 21;
+            this.txtSleftOn.Text = ".5";
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(824, 631);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(52, 13);
+            this.label9.TabIndex = 20;
+            this.label9.Text = "S Left On";
+            // 
+            // txtSrightOn
+            // 
+            this.txtSrightOn.Location = new System.Drawing.Point(881, 654);
+            this.txtSrightOn.Name = "txtSrightOn";
+            this.txtSrightOn.Size = new System.Drawing.Size(100, 20);
+            this.txtSrightOn.TabIndex = 23;
+            this.txtSrightOn.Text = ".5";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(824, 657);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(59, 13);
+            this.label10.TabIndex = 22;
+            this.label10.Text = "S Right On";
+            // 
+            // txtSWidth
+            // 
+            this.txtSWidth.Location = new System.Drawing.Point(881, 680);
+            this.txtSWidth.Name = "txtSWidth";
+            this.txtSWidth.Size = new System.Drawing.Size(100, 20);
+            this.txtSWidth.TabIndex = 25;
+            this.txtSWidth.Text = ".5";
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(824, 683);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(45, 13);
+            this.label11.TabIndex = 24;
+            this.label11.Text = "S Width";
+            // 
+            // txtSCenter
+            // 
+            this.txtSCenter.Location = new System.Drawing.Point(881, 706);
+            this.txtSCenter.Name = "txtSCenter";
+            this.txtSCenter.Size = new System.Drawing.Size(100, 20);
+            this.txtSCenter.TabIndex = 27;
+            this.txtSCenter.Text = ".5";
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(824, 709);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(48, 13);
+            this.label12.TabIndex = 26;
+            this.label12.Text = "S Center";
+            // 
+            // timerUpdate
+            // 
+            this.timerUpdate.Tick += new System.EventHandler(this.timerUpdate_Tick);
+            // 
+            // txtMode
+            // 
+            this.txtMode.Location = new System.Drawing.Point(490, 628);
+            this.txtMode.Name = "txtMode";
+            this.txtMode.Size = new System.Drawing.Size(100, 20);
+            this.txtMode.TabIndex = 29;
+            this.txtMode.Text = "0";
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(433, 631);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(51, 13);
+            this.label13.TabIndex = 28;
+            this.label13.Text = "CT Mode";
+            // 
+            // button5
+            // 
+            this.button5.Location = new System.Drawing.Point(596, 626);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(105, 22);
+            this.button5.TabIndex = 30;
+            this.button5.Text = "Mode Off";
+            this.button5.UseVisualStyleBackColor = true;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
+            // 
+            // button6
+            // 
+            this.button6.Location = new System.Drawing.Point(596, 652);
+            this.button6.Name = "button6";
+            this.button6.Size = new System.Drawing.Size(105, 22);
+            this.button6.TabIndex = 31;
+            this.button6.Text = "Mode Manual";
+            this.button6.UseVisualStyleBackColor = true;
+            this.button6.Click += new System.EventHandler(this.button6_Click);
+            // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(596, 678);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(105, 22);
+            this.button7.TabIndex = 32;
+            this.button7.Text = "Mode Auto";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
+            // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(78, 704);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(100, 20);
+            this.textBox1.TabIndex = 40;
+            this.textBox1.Text = ".5";
+            // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Location = new System.Drawing.Point(21, 707);
+            this.label14.Name = "label14";
+            this.label14.Size = new System.Drawing.Size(48, 13);
+            this.label14.TabIndex = 39;
+            this.label14.Text = "S Center";
+            // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(78, 678);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(100, 20);
+            this.textBox2.TabIndex = 38;
+            this.textBox2.Text = ".5";
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Location = new System.Drawing.Point(21, 681);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(45, 13);
+            this.label15.TabIndex = 37;
+            this.label15.Text = "S Width";
+            // 
+            // txtCtargetSer
+            // 
+            this.txtCtargetSer.Location = new System.Drawing.Point(96, 652);
+            this.txtCtargetSer.Name = "txtCtargetSer";
+            this.txtCtargetSer.Size = new System.Drawing.Size(100, 20);
+            this.txtCtargetSer.TabIndex = 36;
+            this.txtCtargetSer.Text = ".5";
+            // 
+            // label16
+            // 
+            this.label16.AutoSize = true;
+            this.label16.Location = new System.Drawing.Point(21, 655);
+            this.label16.Name = "label16";
+            this.label16.Size = new System.Drawing.Size(69, 13);
+            this.label16.TabIndex = 35;
+            this.label16.Text = "Target Servo";
+            // 
+            // txtCtargetVel
+            // 
+            this.txtCtargetVel.Location = new System.Drawing.Point(96, 626);
+            this.txtCtargetVel.Name = "txtCtargetVel";
+            this.txtCtargetVel.Size = new System.Drawing.Size(100, 20);
+            this.txtCtargetVel.TabIndex = 34;
+            this.txtCtargetVel.Text = ".5";
+            // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.Location = new System.Drawing.Point(21, 629);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(56, 13);
+            this.label17.TabIndex = 33;
+            this.label17.Text = "Target Vel";
+            // 
+            // button8
+            // 
+            this.button8.Location = new System.Drawing.Point(333, 657);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(41, 37);
+            this.button8.TabIndex = 41;
+            this.button8.Text = "v+";
+            this.button8.UseVisualStyleBackColor = true;
+            this.button8.Click += new System.EventHandler(this.button8_Click);
+            // 
+            // button9
+            // 
+            this.button9.Location = new System.Drawing.Point(333, 697);
+            this.button9.Name = "button9";
+            this.button9.Size = new System.Drawing.Size(41, 37);
+            this.button9.TabIndex = 42;
+            this.button9.Text = "v-";
+            this.button9.UseVisualStyleBackColor = true;
+            this.button9.Click += new System.EventHandler(this.button9_Click);
+            // 
+            // button10
+            // 
+            this.button10.Location = new System.Drawing.Point(286, 678);
+            this.button10.Name = "button10";
+            this.button10.Size = new System.Drawing.Size(41, 37);
+            this.button10.TabIndex = 43;
+            this.button10.Text = "s-";
+            this.button10.UseVisualStyleBackColor = true;
+            this.button10.Click += new System.EventHandler(this.button10_Click);
+            // 
+            // button11
+            // 
+            this.button11.Location = new System.Drawing.Point(380, 678);
+            this.button11.Name = "button11";
+            this.button11.Size = new System.Drawing.Size(41, 37);
+            this.button11.TabIndex = 44;
+            this.button11.Text = "s+";
+            this.button11.UseVisualStyleBackColor = true;
+            this.button11.Click += new System.EventHandler(this.button11_Click);
+            // 
+            // button12
+            // 
+            this.button12.Location = new System.Drawing.Point(286, 631);
+            this.button12.Name = "button12";
+            this.button12.Size = new System.Drawing.Size(135, 25);
+            this.button12.TabIndex = 45;
+            this.button12.Text = "Exit";
+            this.button12.UseVisualStyleBackColor = true;
+            this.button12.Click += new System.EventHandler(this.button12_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1246, 769);
+            this.Controls.Add(this.button12);
+            this.Controls.Add(this.button11);
+            this.Controls.Add(this.button10);
+            this.Controls.Add(this.button9);
+            this.Controls.Add(this.button8);
+            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.label14);
+            this.Controls.Add(this.textBox2);
+            this.Controls.Add(this.label15);
+            this.Controls.Add(this.txtCtargetSer);
+            this.Controls.Add(this.label16);
+            this.Controls.Add(this.txtCtargetVel);
+            this.Controls.Add(this.label17);
+            this.Controls.Add(this.button7);
+            this.Controls.Add(this.button6);
+            this.Controls.Add(this.button5);
+            this.Controls.Add(this.txtMode);
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.txtSCenter);
+            this.Controls.Add(this.label12);
+            this.Controls.Add(this.txtSWidth);
+            this.Controls.Add(this.label11);
+            this.Controls.Add(this.txtSrightOn);
+            this.Controls.Add(this.label10);
+            this.Controls.Add(this.txtSleftOn);
+            this.Controls.Add(this.label9);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.txtMavV);
             this.Controls.Add(this.txtLostV);
@@ -292,6 +584,34 @@
         private System.Windows.Forms.TextBox txtMavV;
         private System.IO.Ports.SerialPort spCar;
         private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.ColorDialog colorDialog1;
+        private System.Windows.Forms.TextBox txtSleftOn;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.TextBox txtSrightOn;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.TextBox txtSWidth;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.TextBox txtSCenter;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Timer timerUpdate;
+        private System.Windows.Forms.TextBox txtMode;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.Button button5;
+        private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.Label label15;
+        private System.Windows.Forms.TextBox txtCtargetSer;
+        private System.Windows.Forms.Label label16;
+        private System.Windows.Forms.TextBox txtCtargetVel;
+        private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.Button button8;
+        private System.Windows.Forms.Button button9;
+        private System.Windows.Forms.Button button10;
+        private System.Windows.Forms.Button button11;
+        private System.Windows.Forms.Button button12;
     }
 }
 
