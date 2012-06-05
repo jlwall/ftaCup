@@ -16,12 +16,13 @@ extern const vuint32_t IntcIsrVectorTable[];
 void initMainHardware(void)
 {	
 	disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
-	initPads ();
+
 
 	//initCTU();
 
 	initModesAndClock();
 	initPeriClkGen() ;
+		initPads ();
 	disableWatchdog();
 	init_LinFLEX_0_UART ();
 	initCAN_0();             /* Initialize FLEXCAN 0*/
@@ -82,16 +83,7 @@ EMIOS_0.CH[23].CADR.R = 999;      	/* Period will be 999+1 = 1000 clocks (1 msec
     SIU.PCR[17].R = 0x0200;				/* Program the drive enable pin of Right Motor as output*/
 	SIU.PCR[16].R = 0x0200;				/* Program the drive enable pin of Left Motor as output*/
 	SIU.PGPDO[0].R = 0x00000000;		/* Disable the motors */
-
-
-    
-  
-//	vfnInit_CamLin_Ipwm();
-//	vfnInit_Servo();
-//	vfnInit_Motor();
 	
-	
-	vfnSet_Servo(800);
 	enableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 	
 }
@@ -100,9 +92,11 @@ void initPads (void)
 {
 	SIU.PCR[2].R = 0x0503;           	/* MPC56xxB: Initialize PA[2] as eMIOS[2] input */
 	SIU.PCR[3].R = 0x0600;           	/* MPC56xxB: Initialize PA[3] as eMIOS[3] output */
-	SIU.PCR[PCR_ADC_ANP0].R = 0x2000;          	/* MPC56xxB: Initialize PB[4] as ANP0 */
-	SIU.PCR[PCR_ADC_ANP1].R = 0x2000;          	/* MPC56xxB: Initialize PB[5] as ANP1 */
-	SIU.PCR[PCR_ADC_ANP2].R = 0x2000;          	/* MPC56xxB: Initialize PB[6] as ANP2 */
+	SIU.PCR[20].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
+	SIU.PCR[21].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
+	SIU.PCR[22].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
+	SIU.PCR[23].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
+	
 	
 	//LED OUTS
 	SIU.PCR[68].R = 0x0200;				/* Program the drive enable pin of LED1 (PE4) as output*/
@@ -120,10 +114,10 @@ void initPads (void)
 }
 
 void initADC(void) {
-	ADC.MCR.R = 0x20000000;         	/* Initialize ADC scan mode*/
+	ADC.MCR.R = 0x80000000;         	/* Initialize ADC scan mode*/
 	ADC.NCMR[0].R = 0x00000001;      	/* Select ANP1:2 inputs for normal conversion */
-	ADC.CTR[0].R = 0x00008606;       	/* Conversion times for 32MHz ADClock */
-//	ADC.MCR.B.NSTART = 1;       	/* Conversion times for 32MHz ADClock */
+	ADC.CTR[0].R = 0x00008607;       	/* Conversion times for 32MHz ADClock */
+    
 }
 
 void initCTU(void) {
