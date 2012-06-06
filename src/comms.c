@@ -5,48 +5,46 @@
 
 extern struct CAR car;
 
-volatile uint8_t Result[128];                	/* Read converstion result from ADC input ANS0 */
+U8 rx_data[4],pt;
 
-uint8_t rx_data[4],pt;
-
-void printserialhex(uint16_t innum) {
-  uint16_t j1,in;
-  uint8_t p1,p2;
+void printserialhex(U16 innum) {
+  U16 j1,in;
+  U8 p1,p2;
   in = innum;
    
   j1 = (in & 0x0f);
-  if (j1 > 9) p1 = (uint8_t)(j1 + 0x41 - 10);
-  else p1 = (uint8_t)(j1 +0x30);
+  if (j1 > 9) p1 = (U8)(j1 + 0x41 - 10);
+  else p1 = (U8)(j1 +0x30);
   j1 = (in & 0xf0) >> 4;
-  if (j1 > 9) p2 = (uint8_t)(j1 +0x41 - 10);
-  else p2 = (uint8_t)(j1 +0x30);
+  if (j1 > 9) p2 = (U8)(j1 +0x41 - 10);
+  else p2 = (U8)(j1 +0x30);
   TransmitCharacter(p2);
   TransmitCharacter(p1);  
 }
 
-void printserialsingned(uint16_t innum) {
-  uint16_t j1,k1,l1,m1,in;
-  uint8_t p1,p2,p3,p4,p5;
+void printserialsingned(U16 innum) {
+  U16 j1,k1,l1,m1,in;
+  U8 p1,p2,p3,p4,p5;
  
   if(innum < 0x8000) {
     in = innum;
   	TransmitCharacter('+');    
   } 
   else {
-    in = (uint16_t)(~innum);
+    in = (U16)(~innum);
     //in = 0x7fff - in;
     TransmitCharacter('-');     
   }
   
   j1 = (in / 10);
-  p1 = (uint8_t)(in - j1*10 +0x30);
+  p1 = (U8)(in - j1*10 +0x30);
   k1 = (j1 / 10);
-  p2 = (uint8_t)(j1 - k1*10 +0x30);
+  p2 = (U8)(j1 - k1*10 +0x30);
   l1 = (k1 / 10);
-  p3 = (uint8_t)(k1 - l1*10 +0x30);
+  p3 = (U8)(k1 - l1*10 +0x30);
   m1 = (l1 / 10);
-  p4 = (uint8_t)(l1 - m1*10 +0x30);
-  p5 = (uint8_t)m1 +0x30;
+  p4 = (U8)(l1 - m1*10 +0x30);
+  p5 = (U8)m1 +0x30;
   TransmitCharacter(p5);
   TransmitCharacter(p4);
   TransmitCharacter(p3);
@@ -57,17 +55,34 @@ void printserialsingned(uint16_t innum) {
 
 
 void printlistall(void) {
+   TransmitCharacter(0x0c); 
    TransmitCharacter(0x0a);   
    TransmitCharacter(0x0d);  
-   for(pt=0;pt<120;pt++){
-      printserialhex(Result[pt]);
+   for(pt=0;pt<120;pt+=3){
+
+	if(car.sensor.array[pt]>car.sensor.valMin + car.sensor.threshold)
+      TransmitCharacter('_');
+	else
+		TransmitCharacter('-');
    }
    TransmitCharacter(0x0a);   
    TransmitCharacter(0x0d);   
+   
+   	TransmitData("\r\nLeft = ");
+   printserialsingned(car.sensor.cornLeft);
+   
+   	TransmitData("\r\nRight = ");
+   printserialsingned(car.sensor.cornRight);
+   
+   TransmitData("\r\nCenter = ");
+   printserialsingned(car.sensor.center);
+   
+   TransmitData("\r\nWidth = ");
+   printserialsingned(car.sensor.width);
 }
 
 
-void TransmitCharacter(uint8_t ch)
+void TransmitCharacter(U8 ch)
 {
 	LINFLEX_0.BDRL.B.DATA0 = ch;  			/* write character to transmit buffer */
 	while (1 != LINFLEX_0.UARTSR.B.DTF) {}  /* Wait for data transmission completed flag */
@@ -76,20 +91,19 @@ void TransmitCharacter(uint8_t ch)
 
 void TransmitData (char TransData[]) 
 {
-	uint8_t	j,k;                                 /* Dummy variable */
-	k = strlen (TransData);
+	U8	j,k;                                 /* Dummy variable */
+	k = (U8)strlen (TransData);
 	for (j=0; j< k; j++) 
 	{  /* Loop for character string */
 
 		TransmitCharacter(TransData[j]);  		/* Transmit a byte */		
-
 	}
 }
 
 /* This functions polls UART receive buffer. when it is full, it moves received data from the buffer to the memory */
-uint8_t ReadData (void)
+U8 ReadData (void)
 {
-	uint8_t ch;
+	U8 ch;
 	/* wait for DRF */
 	while (1 != LINFLEX_0.UARTSR.B.DRF) {}  /* Wait for data reception completed flag */
 		
@@ -97,7 +111,7 @@ uint8_t ReadData (void)
 	while (1 != LINFLEX_0.UARTSR.B.RMB) {}  /* Wait for Release Message Buffer */
 	
 	/* get the data */
-	ch = (uint8_t)LINFLEX_0.BDRM.B.DATA4;
+	ch = (U8)LINFLEX_0.BDRM.B.DATA4;
 		
 	/* clear the DRF and RMB flags by writing 1 to them */
 	LINFLEX_0.UARTSR.R = 0x0204;
@@ -106,105 +120,26 @@ uint8_t ReadData (void)
 	
 }
 
-void RIGHT_MOTOR_CURRENT(void)
-{
-	uint8_t i;
-	uint32_t curdata;
-	TransmitData("****Right Motor Current****\n\r");
-	SIU.PGPDO[0].R = 0x00004000;			/* Enable Right the motors */
-	Delaywait();
-	for (i=0;i <10;i++)
-	{
-		ADC.MCR.B.NSTART=1;     			/* Trigger normal conversions for ADC0 */
-		while (ADC.MSR.B.NSTART == 1) {};
-		curdata = ADC.CDR[2].B.CDATA;
-		printserialsingned(curdata);		
-	}
-	SIU.PGPDO[0].R = 0x00000000;		/* Disable Right the motors */
-}
-
 void TRIM_POT_ADC(void)
 {
-	uint8_t i;
-	uint32_t curdata;
+	U16 curdata;
 	TransmitData("****Trim Pot****\n\r");
-		for (i=0;i <2;i++)
-	{
-		ADC.MCR.B.NSTART=1;     			/* Trigger normal conversions for ADC0 */
-	//	while (ADC.MSR.B.NSTART == 1) {};
-		curdata = ADC.CDR[0].B.CDATA;
-		printserialsingned(curdata);
-		curdata = ADC.CDR[1].B.CDATA;
-		printserialsingned(curdata);
-		curdata = ADC.CDR[2].B.CDATA;
-		printserialsingned(curdata);
-		curdata = ADC.CDR[3].B.CDATA;
-		printserialsingned(curdata);
-		curdata = ADC.CDR[4].B.CDATA;
-		printserialsingned(curdata);
-		curdata = ADC.CDR[5].B.CDATA;
-		printserialsingned(curdata);
-		curdata = ADC.CDR[6].B.CDATA;
-		printserialsingned(curdata);
-		curdata = ADC.CDR[7].B.CDATA;
-		printserialsingned(curdata);		
-	}
-
-}
-
-void LEFT_MOTOR_CURRENT(void)
-{
-	uint8_t i;
-	uint32_t curdata;
 	
-	TransmitData("****Left Motor Current****\n\r");
-	SIU.PGPDO[0].R = 0x00008000;			/* Enable Right the motors */
-	Delaywait();
-	for (i=0;i <10;i++)
-	{
-		ADC.MCR.B.NSTART=1;     			/* Trigger normal conversions for ADC0 */
-		while (ADC.MSR.B.NSTART == 1) {};
-		curdata = ADC.CDR[1].B.CDATA;
-		printserialsingned(curdata);		
-	}
-	SIU.PGPDO[0].R = 0x00000000;		/* Disable Right the motors */
-}
 
+	curdata = (U16)ADC.CDR[0].B.CDATA;
+	TransmitData("\n\r ADC0 * ");
+	printserialsingned(curdata);
+	
+
+}
 
 
 void CAMERA(void)
 {
-u8Capture_Pixel_Values();
-printlistall();
+	u8Capture_Pixel_Values();
+	printlistall();
 }
 
-void LED(void)
-{
-	SIU.PCR[68].R = 0x0200;				/* Program the drive enable pin of LED1 (PE4) as output*/
-	SIU.PCR[69].R = 0x0200;				/* Program the drive enable pin of LED2 (PE5) as output*/
-	SIU.PCR[70].R = 0x0200;				/* Program the drive enable pin of LED3 (PE6) as output*/
-	SIU.PCR[71].R = 0x0200;				/* Program the drive enable pin of LED4 (PE7) as output*/
-	TransmitData("****Led Test****\n\r");
-	TransmitData("All Led ON\n\r");
-	Delayled();
-	SIU.PGPDO[2].R |= 0x0f000000;		/* Disable LEDs*/
-	SIU.PGPDO[2].R &= 0x07000000;		/* Enable LED1*/
-	TransmitData("Led 1 ON\n\r");
-	Delayled();
-	SIU.PGPDO[2].R |= 0x08000000;		/* Disable LED1*/
-	SIU.PGPDO[2].R &= 0x0b000000;		/* Enable LED2*/
-	TransmitData("Led 2 ON\n\r");
-	Delayled();
-	SIU.PGPDO[2].R |= 0x04000000;		/* Disable LED2*/
-	SIU.PGPDO[2].R &= 0x0d000000;		/* Enable LED3*/
-	TransmitData("Led 3 ON\n\r");
-	Delayled();
-	SIU.PGPDO[2].R |= 0x02000000;		/* Disable LED3*/
-	SIU.PGPDO[2].R &= 0x0e000000;		/* Enable LED4*/
-	TransmitData("Led 4 ON\n\r");
-	Delayled();
-	SIU.PGPDO[2].R |= 0x01000000;		/* Disable LED4*/
-}
 
 void SWITCH(void)
 {
@@ -214,64 +149,73 @@ void SWITCH(void)
 	SIU.PCR[67].R = 0x0100;				/* Program the drive enable pin of S4 (PE3) as input*/
 	TransmitData("****Switch Test****\n\r");
 	TransmitData("Press S1 Switch\n\r");
-	while((SIU.PGPDI[2].R & 0x80000000) == 0x80000000); /*Wait until S1 switch is pressed*/
+	while((SIU.PGPDI[2].R & 0x80000000) == 0x80000000)
+	{
+		
+	}; /*Wait until S1 switch is pressed*/
 	TransmitData("Switch S1 Pressed \n\r");
 	TransmitData("Press S2 Switch\n\r");
-	while((SIU.PGPDI[2].R & 0x40000000) == 0x40000000); /*Wait until S2 switch is pressed*/
+	while((SIU.PGPDI[2].R & 0x40000000) == 0x40000000)
+	{
+		
+	}; /*Wait until S2 switch is pressed*/
 	TransmitData("Switch S2 Pressed \n\r");
 	TransmitData("Press S3 Switch\n\r");
-	while((SIU.PGPDI[2].R & 0x20000000) == 0x20000000); /*Wait until S3 switch is pressed*/
+	while((SIU.PGPDI[2].R & 0x20000000) == 0x20000000)
+	{
+		
+	}; /*Wait until S3 switch is pressed*/
 	TransmitData("Switch S3 Pressed \n\r");
 		TransmitData("Press S4 Switch\n\r");
-	while((SIU.PGPDI[2].R & 0x10000000) == 0x10000000); /*Wait until S4 switch is pressed*/
+	while((SIU.PGPDI[2].R & 0x10000000) == 0x10000000)
+	{
+		
+	}; /*Wait until S4 switch is pressed*/
 	TransmitData("Switch S4 Pressed \n\r");
 }
 
 void SERVO(void)
 {
 	TransmitData("****Steering Servo Test****\n\r");
-	EMIOS_0.CH[4].CBDR.R = 1500;      	/* 1500 Middle */
+	EMIOS_0.CH[4].CBDR.R = constServoMiddle;      	/* 1500 Middle */
 	TransmitData("Middle\n\r");
 	Delaywait();
-	EMIOS_0.CH[4].CBDR.R = 1750;        /* 1750 Right Max,*/
+	EMIOS_0.CH[4].CBDR.R = constServoMiddle + constServoMax;        /* 1750 Right Max,*/
 	TransmitData("Right\n\r");
 	Delaywait();
-	EMIOS_0.CH[4].CBDR.R = 1250;        /* 1250 Left Max*/
+	EMIOS_0.CH[4].CBDR.R = constServoMiddle - constServoMax;        /* 1250 Left Max*/
 	TransmitData("Left\n\r");
 	Delaywait();
-	EMIOS_0.CH[4].CBDR.R = 1500;      	/* 1500 Middle */
+	EMIOS_0.CH[4].CBDR.R = constServoMiddle;      	/* 1500 Middle */
 }
-
-
-void MOTOR_LEFT(void)
-{
-
-	TransmitData("****Left Drive Motor Test****\n\r");
-		vfnSet_Duty_Opwm(6,(uint16_t)car.ctrl.targetVelocity ); 
-	SIU.PCR[16].R = 0x0200;				/* Program the drive enable pin of Left Motor as output*/
-	SIU.PGPDO[0].R = 0x00008000;		/* Enable Left the motors */
-	Delaywait();
-	SIU.PGPDO[0].R = 0x00000000;		/* Disable Left the motors */
-}
-
-void MOTOR_RIGHT(void)
-{
-	TransmitData("****Right Drive Motor Test****\n\r");
-	vfnSet_Duty_Opwm(7,car.ctrl.targetVelocity ); 
-	SIU.PCR[17].R = 0x0200;				/* Program the drive enable pin of Right Motor as output*/
-	SIU.PGPDO[0].R = 0x00004000;		/* Enable Right the motors */
-	Delaywait();
-	SIU.PGPDO[0].R = 0x00000000;		/* Disable Right the motors */
-}
-
 
 void SendStatusPacket(void)
 {
 	TransmitCharacter(0x01);   
 	TransmitCharacter(0x02);
-	TransmitCharacter(10);
+	TransmitCharacter(15);   //DLC = 15 packets
 	
-	  
+	TransmitCharacter(0x50);  //packet 55
+	
+	TransmitCharacter(car.sensor.cornLeft);
+	TransmitCharacter(car.sensor.cornRight);
+	TransmitCharacter(car.sensor.width);
+	TransmitCharacter(car.sensor.center);
+	
+	TransmitCharacter((U8)(car.ctrl.velTarget>>8));
+	TransmitCharacter((U8)car.ctrl.velTarget);
+
+	TransmitCharacter((U8)(car.ctrl.targetServoPos>>8));
+	TransmitCharacter((U8)car.ctrl.targetServoPos);
+
+	TransmitCharacter((U8)(car.ctrl.biasVelocity>>8));
+	TransmitCharacter((U8)car.ctrl.biasVelocity);
+
+	TransmitCharacter((U8)(car.ctrl.error>>8));
+	TransmitCharacter((U8)car.ctrl.error);
+
+	TransmitCharacter(car.ctrl.manualMode);
+	TransmitCharacter(car.sensor.valid);
 
 	TransmitCharacter(0x55);
 	

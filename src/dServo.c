@@ -50,8 +50,7 @@ void vfnSet_Servo(S16 u16Position)  /* Values are between u16MinVal and u16MaxVa
 void vfnInit_Servo(void)
 {
 	vfnSetup_Emios_0();
-	vfnInit_Emios_0();   
-	  					
+	vfnInit_Emios_0();   	  					
 	  					
   	vfnInit_Emios_0_Mcb(SERVO_MCB_CHANNEL,2000); 							/* Set channel as MCB  */	
   	
