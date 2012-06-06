@@ -5,6 +5,7 @@
 #include "main.h"
 
 
+
 vuint32_t i,j;                					/* Dummy idle counter */
 
 volatile uint32_t dly,lly,chw,adcdata,curdata;
@@ -35,12 +36,19 @@ const struct CAR_CAL cal =
 	float servoArm;
 	float steeringNuckle;
 	float maxAccel;
+	
+		float servGainIgainLimit;
 
 	S16 errorTol;
 	U16 maxSpeed;
 	U16 lostSpeed;
+	U8  senseWidthMin;
+	U8  senseWidthMax;
+	U8  runTime;
+	U8  sensorMinDynRange;
+		S8  sensorMaxError;
 */
-	400,4,5,190,270,25,20,0.65,2,650,200
+	4.2,0.4,0.5,190,270,25,20,0.65, 100, 5,650,220,15,40,15,12,50
 };
 
 
@@ -52,90 +60,46 @@ const struct CAR_CAL cal =
 
 int main(void) 
 {
-  volatile int i = 0;
-  char option = 0;
-  U32 motLeft;
-  U32 motRight;
-  uint32_t * writer;
+	volatile int i = 0;
+	char option = 0;
 
+	car.ctrl.biasVelocity = constBiasCenter;
+	car.ctrl.targetServoPos = 0;
+	car.ctrl.targetVelocity = 0;
+	car.ctrl.manualMode = 0;
 
-car.ctrl.targetServoPos = 0;
- // if(cal.servGain==0)	
-  initMainHardware();
+	initMainHardware();
   
-  
-/*  DFLASH.MCR.B.PGM = 1;
-  DFLASH.LML.B.LLK = 0xFFFE;
- 
- writer = (uint32_t*)0x00800000;
- *writer = 0x12345678; 
- 
- DFLASH.MCR.B.EHV = 1;
- 
- 
-DFLASH.MCR.B.PGM = 0;
-*/
+
 
   /* Loop forever */
   for (;;) {
-  		TransmitData("\n\r**The Freescale Cup**");
+  		TransmitData("\n\r**The Freescale FTA**");
 		TransmitData("\n\r*********************");
-		TransmitData("\n\r1.Led\n\r");
-		TransmitData("2.Switch\n\r");
-		TransmitData("3.Servo\n\r");
-		TransmitData("4.Motor Left\n\r");
-		TransmitData("5.Motor Right\n\r");
+		TransmitData("0.Stop Mode\n\r");
+		TransmitData("1.Manual\n\r");
+		TransmitData("2.AutoPilot\n\r");
+		TransmitData("3.ServoTest\n\r");
 		TransmitData("6.Camera\n\r");
-		TransmitData("7.Left Motor Current\n\r");
-		TransmitData("8.Right Motor Current\n\r");
-		TransmitData("9.Trim Pot");
 		TransmitData("\n\r**********************");
 		
 		option = ReadData();
 		
 		switch(option)
 		{
-			case '1':
-				LED();
-			break;
-			case '2':
-				SWITCH();
-			break;
-			case '3':
-				SERVO();
-			break;
-			case '4':
-				MOTOR_LEFT();
-			break;
-			case '5':
-				MOTOR_RIGHT();
-			break;
-			case '6':
-				CAMERA();
-			break;
-			case '7':
-				LEFT_MOTOR_CURRENT();
-			break;
-			case '8':
-				RIGHT_MOTOR_CURRENT();
-			break;
-			case '9':
-				TRIM_POT_ADC();
-			break;
 			case '0':
+				car.ctrl.manualMode = 0;
+			break;			
+			case '1':
 				
 				TransmitData("\n\r**Manual Mode**");
 				TransmitData("\n\r*********************");
 				SIU.PGPDO[0].R = 0x0000C000;		/* Enable Right the motors */
 				car.ctrl.targetVelocity = 0;
 				car.ctrl.targetServoPos = 0;
-				car.ctrl.biasVelocity = 500;
+				car.ctrl.biasVelocity = constBiasCenter;				
+				car.ctrl.manualMode = 1;   //0 = dormant, 1 = manual, 2 = auto
 				
-				
-					vfnSet_Duty_Opwm(6,(car.ctrl.targetVelocity * car.ctrl.biasVelocity)/ 1000  ); 
-				vfnSet_Duty_Opwm(7,(car.ctrl.targetVelocity * (1000 - car.ctrl.biasVelocity)) / 1000 ); 
-				
-				EMIOS_0.CH[4].CBDR.R = 1500 + car.ctrl.targetServoPos; 
 				 for (;;) 
 				 {
 					option = ReadData();
@@ -146,8 +110,9 @@ DFLASH.MCR.B.PGM = 0;
 							if(car.ctrl.biasVelocity <0)
 								car.ctrl.biasVelocity =0;	break;
 						case 'y':	car.ctrl.biasVelocity += 5; 
-							if(car.ctrl.biasVelocity >1000)
-								car.ctrl.biasVelocity =1000;break;
+							if(car.ctrl.biasVelocity >constBiasCenter*2)
+								car.ctrl.biasVelocity =constBiasCenter*2
+								;break;
 						case 'f':	car.ctrl.targetServoPos -= 8; break;
 						case 'h':	car.ctrl.targetServoPos += 8; break;
 						case 't':	car.ctrl.targetVelocity += 10; break;
@@ -157,25 +122,30 @@ DFLASH.MCR.B.PGM = 0;
 								car.ctrl.targetVelocity =0;							
 							break;
 						case 'x':goto endOut; break;
-
-					}
-					motLeft = ((U32)car.ctrl.targetVelocity * (U32)car.ctrl.biasVelocity)/500;
-					motRight = ((U32)car.ctrl.targetVelocity * (1000-(U32)car.ctrl.biasVelocity))/500;
-				vfnSet_Duty_Opwm(6,motLeft);
-				vfnSet_Duty_Opwm(7,motRight);
-						EMIOS_0.CH[4].CBDR.R = 1500 + car.ctrl.targetServoPos; 
+					}						
 					
 				 }
 				 endOut:
 				 	SIU.PGPDO[0].R = 0x00000000;		/* Enable Right the motors */
+				 	car.ctrl.manualMode = 0;
 			break;
-			
+			case '2':
+				SIU.PGPDO[0].R = 0x0000C000;
+				car.ctrl.autoTimer = cal.runTime;
+				car.ctrl.manualMode = 2;
+			break;
+			case '3':  
+				SERVO();  // test the servo
+			break;
+		
+			case '6':
+				printlistall();  //camera debug output
+			break;	
 			
 			default:
 			TransmitData((char*)&option);
 			break;
 		}
-
   }
 }
 
@@ -184,91 +154,180 @@ DFLASH.MCR.B.PGM = 0;
 void task_1msec()
 {
 	
-/*	if(SIU.GPDI[65].R>=1)
-	{
-			SIU.GPDO[69].R = 0x00;	
-	}
-
-	else
-	{
-			SIU.GPDO[69].R = 0x01;	
-	}
-	*/
 }
 
 void task_2msec()
 {
-	
+ 	U32 motLeft;
+  	U32 motRight;
+ 
+	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 2 + car.ctrl.targetVelocity)/3;
+
+	motLeft = ((U32)car.ctrl.velTarget * (U32)car.ctrl.biasVelocity)/constBiasCenter;
+	motRight = ((U32)car.ctrl.velTarget * (constBiasCenter*2-(U32)car.ctrl.biasVelocity))/constBiasCenter;
+
+	vfnSet_Duty_Opwm(6,motLeft);
+	vfnSet_Duty_Opwm(7,motRight);
+
 	taskCTR_2msec=0;
 }
 
 void task_5msec()
 {
-	
+ 	
 	taskCTR_5msec=0;
 }
 
 void task_10msec()
 {
+	u8Capture_Pixel_Values();
+	
+	if(car.ctrl.manualMode==2)	//auto pilot Mode
+	{
+	
+		//set the steering position, iTerm
+		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
+		{					
+			car.ctrl.iTerm += car.ctrl.error + cal.servGainIgain;
+			
+			//Limit the iTerm
+			if(car.ctrl.iTerm > cal.servGainIgainLimit)
+				car.ctrl.iTerm = cal.servGainIgainLimit;
+			else if(car.ctrl.iTerm < -cal.servGainIgainLimit)
+				car.ctrl.iTerm = -cal.servGainIgainLimit;
+		}
+		else
+			car.ctrl.iTerm = 0;
+		
+		
+		//set the position, P, and I term only here
+		car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain + car.ctrl.iTerm;
+		
+			//limit the servo Travel
+		if(car.ctrl.targetServoPos<-constServoMax)
+			car.ctrl.targetServoPos = -constServoMax;
+		else if(car.ctrl.targetServoPos>constServoMax)
+			car.ctrl.targetServoPos = constServoMax;
+			
+			
+		if(car.sensor.valid==1) //sensor has a valid read
+		{
+		
+			
+			//set the target open loop velocity
+			if(car.ctrl.error < -cal.errorTol)
+				car.ctrl.targetVelocity = (U16)(cal.maxSpeed + car.ctrl.error*cal.servGain);
+			else if(car.ctrl.error > cal.errorTol)
+				car.ctrl.targetVelocity = (U16)(cal.maxSpeed - car.ctrl.error*cal.servGain);
+			else
+				car.ctrl.targetVelocity = cal.maxSpeed;
+			
+
+			//aditional speed damping for turning events
+			if(car.ctrl.targetServoPos>15)
+				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
+			else if(car.ctrl.targetServoPos<-15)
+				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
+
+			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos * 2;
+		}
+		else
+		{
+			car.ctrl.targetVelocity = cal.lostSpeed;			
+			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos * 2;	
+		}		
+		
+	}
+	else if(car.ctrl.manualMode==0) // manual Mode
+	{
+		SIU.PGPDO[0].R = 0x00000000;
+		car.ctrl.targetVelocity = 0;	
+		car.ctrl.biasVelocity = constBiasCenter;	
+		
+		//set the position, P, and I term only here
+		car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain;
+		if(car.ctrl.targetServoPos<-constServoMax)
+			car.ctrl.targetServoPos = -constServoMax;
+		else if(car.ctrl.targetServoPos>constServoMax)
+			car.ctrl.targetServoPos = constServoMax;
+	}
+	
 	taskCTR_10msec=0;
 }
 
 
 void task_20msec()
 {
-	//vfnSet_Servo(car.ctrl.targetServoPos);
+	//set the servo PWM,
+	EMIOS_0.CH[4].CBDR.R = constServoMiddle + car.ctrl.targetServoPos; 
+
 	taskCTR_20msec=0;
 }
 
 
 void task_40msec()
 {
-	
+
+	if((SIU.PGPDI[2].R & 0x10000000) == 0x0000000)
+	{
+		SIU.PGPDO[0].R = 0x0000C000;
+		car.ctrl.autoTimer = cal.runTime;
+		car.ctrl.manualMode = 2;		
+	}
 	taskCTR_40msec=0;
 }
 
 void task_100msec()
 {
-
+	SendStatusPacket();
 	taskCTR_100msec=0;
 }
 
-int r = 0;
+
 void task_500msec()
 {
-
-if(r>=1)
-	{
+	volatile U8 blinkLed = 0;
+	if(blinkLed>=1)
+		{
 			SIU.GPDO[68].R = 0x00;		
-			r=0;
-	}
-
+			blinkLed=0;
+		}
 	else
-	{
+		{
 			SIU.GPDO[68].R = 0x01;		
-			r++;
-	}
-
-
+			blinkLed++;
+		}
 	taskCTR_500msec=0;
 }
 
 void task_1000msec()
 {
-	
-	
+	if(car.ctrl.autoTimer>0)
+	{
+		car.ctrl.autoTimer--;
+		if((car.ctrl.autoTimer==0)&car.ctrl.manualMode==2)
+		{			
+			car.ctrl.manualMode=0;	
+			SIU.PGPDO[0].R = 0x00000000;		
+		}
+	}	
 	taskCTR_1000msec=0;
 }
 
 
 void Delay(void)
 {
-  for(dly=0;dly<105;dly++);
+  for(dly=0;dly<120;dly++)
+  {  	
+  };
 }
 
 void Delaylong(void)
 {
-  for(dly=0;dly<20000;dly++);
+  for(dly=0;dly<20000;dly++)
+  {
+  	
+  };
 }
 
 void Delaylonglong(void)

@@ -2,6 +2,11 @@
 #include "MPC5604B_M07N.h"
 #include "comms.h"
 
+
+#define constBiasCenter 500
+#define constServoMax 300
+#define constServoMiddle 1500
+
 void task_1msec(void);
 void task_2msec(void);
 void task_5msec(void);
@@ -24,10 +29,37 @@ struct CAR_CAL
 	float servoArm;
 	float steeringNuckle;
 	float maxAccel;
+	
+	float servGainIgainLimit;
 
 	S16 errorTol;
 	U16 maxSpeed;
 	U16 lostSpeed;
+	
+	U8  senseWidthMin;
+	U8  senseWidthMax;
+	U8  runTime;
+	U8  sensorMinDynRange;
+	S8  sensorMaxError;
+	
+};
+
+struct LIGHT_SENSOR
+{
+	U8  array[128];
+	U8	cornLeft;
+	U8	cornRight;
+	U8 	width;
+	U8  center;
+	U8  c1;
+	U8  c2;
+	U8  c3;
+	U8  c4;
+	U8  valid;
+	U8  threshold;
+	U8  valMax;
+	U8  valMin;
+	
 	
 };
 
@@ -36,19 +68,17 @@ float iTerm;
 float dterm;  
 float radiusTarget;
 S16 targetServoPos;
-S16 targetVelocity;
-S16 error;
+U16 targetVelocity;
 S16 biasVelocity;
 S16 errorRate;
 S16 servoDegTarget;
 U16 velTarget;
-U8 center;
-U8 c1;
-U8 c2;
-U8 c3;
-U8 c4;
+S16 error;
+U8 autoTimer;
+U8 manualMode;
 } ;
 
 struct CAR {
 struct CAR_CTRL ctrl;
+struct LIGHT_SENSOR sensor;
 };
