@@ -188,7 +188,7 @@ void task_10msec()
 		//set the steering position, iTerm
 		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
 		{					
-			car.ctrl.iTerm += car.ctrl.error + cal.servGainIgain;
+			car.ctrl.iTerm += (float)car.ctrl.error * cal.servGainIgain;
 			
 			//Limit the iTerm
 			if(car.ctrl.iTerm > cal.servGainIgainLimit)
@@ -196,17 +196,15 @@ void task_10msec()
 			else if(car.ctrl.iTerm < -cal.servGainIgainLimit)
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
 		}
-		else
-			car.ctrl.iTerm = 0;
 		
 		
 		//set the position, P, and I term only here
-		car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain + car.ctrl.iTerm;
+		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*cal.servGain + car.ctrl.iTerm + car.ctrl.dTerm);
 		
 			//limit the servo Travel
-		if(car.ctrl.targetServoPos<-constServoMax)
+		if(car.ctrl.targetServoPos < -constServoMax)
 			car.ctrl.targetServoPos = -constServoMax;
-		else if(car.ctrl.targetServoPos>constServoMax)
+		else if(car.ctrl.targetServoPos > constServoMax)
 			car.ctrl.targetServoPos = constServoMax;
 			
 			
@@ -229,12 +227,12 @@ void task_10msec()
 			else if(car.ctrl.targetServoPos<-15)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 
-			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos * 2;
+			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos / 2;
 		}
 		else
 		{
 			car.ctrl.targetVelocity = cal.lostSpeed;			
-			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos * 2;	
+			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos / 2;	
 		}		
 		
 	}

@@ -40,6 +40,7 @@ void u8Capture_Pixel_Values(void)
 	
 	U8 i;	
 	U8	u8minpos=64;
+	S32 	avgSum=0;
 
 	car.sensor.valMax = 0;
 	car.sensor.valMin = 255;
@@ -63,8 +64,12 @@ void u8Capture_Pixel_Values(void)
 		while(	ADC.MCR.B.NSTART ==1)
 			{			
 			};
-		car.sensor.array[i] = (U8)(ADC.CDR[0].B.CDATA >> 2);
-		if((i>10) & i < 118)  //if we are in edgeless zone, lets find the min and max,
+                if(i<64)
+			car.sensor.array[i] = (U8)(ADC.CDR[0].B.CDATA >> 2) + (64-i)/4;
+		else
+			car.sensor.array[i] = (U8)(ADC.CDR[0].B.CDATA >> 2) + (i-64)/4;
+
+		if((i>5) & i < 123)  //if we are in edgeless zone, lets find the min and max,
 			{	
 			if(car.sensor.valMin > car.sensor.array[i]) //if a new min is found, latch it
 				{
@@ -104,7 +109,11 @@ void u8Capture_Pixel_Values(void)
 	car.sensor.c1 = car.sensor.center;
 	
 	car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)/2;
+
+	//A tap delay to help average the center measured position
+	car.sensor.center = (car.sensor.center * 4 + car.sensor.c1 * 3 + car.sensor.c2 * 2 + car.sensor.c3)/10;
 	
+
 	if((car.sensor.width >= cal.senseWidthMin) && (car.sensor.width <= cal.senseWidthMax) && (car.sensor.threshold > cal.sensorMinDynRange))
 	{
 		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-64)))/2;
@@ -114,10 +123,27 @@ void u8Capture_Pixel_Values(void)
 		else if(car.ctrl.error>cal.sensorMaxError)
 			car.ctrl.error = (S16)cal.sensorMaxError;
 		
+		car.ctrl.dTerm = (car.sensor.center - car.sensor.c2) * cal.dGain;
 		car.sensor.valid = 1;
 	}
 	else
 		car.sensor.valid = 0;
+
+	//averaging Method
+	for(i=0;i<64;i++)
+	{		
+		avgSum += car.sensor.array[i] - car.sensor.array[127-i];
+	}
+
+
+	//cross validate the sensor reading, checking the weighting average
+	if(car.sensor.valid == 1)
+	{
+		if((avgSum > 20) & (car.ctrl.error < -2))
+			car.sensor.valid = 0;
+		else if((avgSum < -20) & (car.ctrl.error >2))
+			car.sensor.valid = 0;
+	}
 
 }
   			
