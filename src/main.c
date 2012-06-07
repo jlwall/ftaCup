@@ -272,6 +272,18 @@ void task_40msec()
 		car.ctrl.autoTimer = cal.runTime;
 		car.ctrl.manualMode = 2;		
 	}
+	
+	if((SIU.PGPDI[2].R & 0x20000000) == 0x00)
+	{
+	//DO SOME SWITCH CAL MODDING HERE
+	}
+	else
+	{
+		SIU.GPDO[68].R = 0;
+		SIU.GPDO[69].R = 0;
+		SIU.GPDO[70].R = 0;
+		SIU.GPDO[71].R = 0;
+	}
 	taskCTR_40msec=0;
 }
 
