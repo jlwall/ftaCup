@@ -31,24 +31,49 @@ const struct CAR_CAL cal =
 	float servGain;
 	float servGainIgain;
 	float servGainDTerm;
+	
 	float setupTrack;
 	float setupWheelBase;
+	
 	float servoArm;
 	float steeringNuckle;
 	float maxAccel;
 	
-		float servGainIgainLimit;
+	float servGainIgainLimit;
 
 	S16 errorTol;
 	U16 maxSpeed;
 	U16 lostSpeed;
+	
 	U8  senseWidthMin;
 	U8  senseWidthMax;
 	U8  runTime;
+	
 	U8  sensorMinDynRange;
-		S8  sensorMaxError;
+	S8  sensorMaxError;
 */
-	4.2,0.4,0.5,190,270,25,20,0.65, 100, 5,650,220,15,40,15,12,50
+	6.2,
+	0.1,
+	0.5,
+	
+	190,
+	270,
+	
+	25,
+	20,
+	0.65, 
+	
+	200, 
+	
+	1,
+	650,
+	220,
+	
+	10,
+	30,
+	60,
+	
+	35,60
 };
 
 
@@ -72,8 +97,10 @@ int main(void)
   
 
 
-  /* Loop forever */
   for (;;) {
+  }
+
+/*
   		TransmitData("\n\r**The Freescale FTA**");
 		TransmitData("\n\r*********************");
 		TransmitData("0.Stop Mode\n\r");
@@ -94,7 +121,7 @@ int main(void)
 				
 				TransmitData("\n\r**Manual Mode**");
 				TransmitData("\n\r*********************");
-				SIU.PGPDO[0].R = 0x0000C000;		/* Enable Right the motors */
+				SIU.PGPDO[0].R = 0x0000C000;	
 				car.ctrl.targetVelocity = 0;
 				car.ctrl.targetServoPos = 0;
 				car.ctrl.biasVelocity = constBiasCenter;				
@@ -126,7 +153,7 @@ int main(void)
 					
 				 }
 				 endOut:
-				 	SIU.PGPDO[0].R = 0x00000000;		/* Enable Right the motors */
+				 	SIU.PGPDO[0].R = 0x00000000;	
 				 	car.ctrl.manualMode = 0;
 			break;
 			case '2':
@@ -147,6 +174,7 @@ int main(void)
 			break;
 		}
   }
+  */
 }
 
 
@@ -174,15 +202,7 @@ void task_2msec()
 
 void task_5msec()
 {
- 	
-	taskCTR_5msec=0;
-}
-
-void task_10msec()
-{
-	u8Capture_Pixel_Values();
-	
-	if(car.ctrl.manualMode==2)	//auto pilot Mode
+ 		if(car.ctrl.manualMode==2)	//auto pilot Mode
 	{
 	
 		//set the steering position, iTerm
@@ -197,9 +217,11 @@ void task_10msec()
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
 		}
 		
+		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * cal.servGainDTerm;
+		
 		
 		//set the position, P, and I term only here
-		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*cal.servGain + car.ctrl.iTerm + car.ctrl.dTerm);
+		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*cal.servGain + car.ctrl.iTerm + car.ctrl.dterm);
 		
 			//limit the servo Travel
 		if(car.ctrl.targetServoPos < -constServoMax)
@@ -242,22 +264,77 @@ void task_10msec()
 		car.ctrl.targetVelocity = 0;	
 		car.ctrl.biasVelocity = constBiasCenter;	
 		
+		
+			if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
+		{					
+			car.ctrl.iTerm += (float)car.ctrl.error * cal.servGainIgain;
+			
+			//Limit the iTerm
+			if(car.ctrl.iTerm > cal.servGainIgainLimit)
+				car.ctrl.iTerm = cal.servGainIgainLimit;
+			else if(car.ctrl.iTerm < -cal.servGainIgainLimit)
+				car.ctrl.iTerm = -cal.servGainIgainLimit;
+		}
+		
+		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * cal.servGainDTerm;
+		
+		
 		//set the position, P, and I term only here
-		car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain;
+		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*cal.servGain + car.ctrl.iTerm + car.ctrl.dterm);
+		
+		//set the position, P, and I term only here
+	//	car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain;
 		if(car.ctrl.targetServoPos<-constServoMax)
 			car.ctrl.targetServoPos = -constServoMax;
 		else if(car.ctrl.targetServoPos>constServoMax)
 			car.ctrl.targetServoPos = constServoMax;
+		
+		
+		car.ctrl.controlCenter = 64;
+	
 	}
 	
+/*	i=0;
+	while(i<16)
+	{
+	TransmitMsgRef((U8*)&car.sensor.array[i*8],8,8+i,0x400+i);
+	i++;
+	}
+	*/
+	//set the servo PWM,
+	EMIOS_0.CH[4].CBDR.R = constServoMiddle + car.ctrl.targetServoPos; 
+	
+	taskCTR_5msec=0;
+}
+
+void task_10msec()
+{
+	u8Capture_Pixel_Values();
+	
+
+
 	taskCTR_10msec=0;
 }
 
 
 void task_20msec()
 {
-	//set the servo PWM,
-	EMIOS_0.CH[4].CBDR.R = constServoMiddle + car.ctrl.targetServoPos; 
+
+	SIU.GPDO[68].R = 1-car.sensor.valid;
+	if(car.ctrl.error<2 & car.ctrl.error>-2)
+		SIU.GPDO[69].R = 0;
+	else
+		SIU.GPDO[69].R = 1;
+	
+	if(car.sensor.width>11 & car.sensor.width<40)
+		SIU.GPDO[70].R = 0;
+	else
+		SIU.GPDO[70].R = 1;
+	
+	if(car.sensor.threshold>cal.sensorMinDynRange & car.sensor.threshold<200)
+		SIU.GPDO[71].R = 0;
+	else
+		SIU.GPDO[71].R = 1;
 
 	taskCTR_20msec=0;
 }
@@ -273,17 +350,7 @@ void task_40msec()
 		car.ctrl.manualMode = 2;		
 	}
 	
-	if((SIU.PGPDI[2].R & 0x20000000) == 0x00)
-	{
-	//DO SOME SWITCH CAL MODDING HERE
-	}
-	else
-	{
-		SIU.GPDO[68].R = 0;
-		SIU.GPDO[69].R = 0;
-		SIU.GPDO[70].R = 0;
-		SIU.GPDO[71].R = 0;
-	}
+
 	taskCTR_40msec=0;
 }
 
@@ -296,17 +363,7 @@ void task_100msec()
 
 void task_500msec()
 {
-	volatile U8 blinkLed = 0;
-	if(blinkLed>=1)
-		{
-			SIU.GPDO[68].R = 0x00;		
-			blinkLed=0;
-		}
-	else
-		{
-			SIU.GPDO[68].R = 0x01;		
-			blinkLed++;
-		}
+
 	taskCTR_500msec=0;
 }
 
@@ -321,6 +378,24 @@ void task_1000msec()
 			SIU.PGPDO[0].R = 0x00000000;		
 		}
 	}	
+	
+	if((SIU.PGPDI[2].R & 0x20000000) == 0x00)
+	{
+		car.ctrl.targetServoPos += 50;	
+	//DO SOME SWITCH CAL MODDING HERE
+	}
+	else 	if((SIU.PGPDI[2].R & 0x40000000) == 0x00)
+	{
+		car.ctrl.targetServoPos -= 50;	
+	//DO SOME SWITCH CAL MODDING HERE
+	}
+	else
+	{
+	}
+	
+	
+
+	
 	taskCTR_1000msec=0;
 }
 
