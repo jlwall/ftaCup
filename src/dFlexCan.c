@@ -7,7 +7,7 @@ uint8_t  RxDATA[8];            /* Received message data string*/
 uint32_t RxTIMESTAMP;          /* Received message time */                         
 
 void initCAN_1 (void) {
-  uint8_t   i;
+    uint8_t   i;
 
   CAN_1.MCR.R = 0x5000003F;       /* Put in Freeze Mode & enable all 64 msg bufs */
   CAN_1.CR.R = 0x04DB0006;        /* Configure for 8MHz OSC, 100KHz bit time */
@@ -15,15 +15,13 @@ void initCAN_1 (void) {
     CAN_1.BUF[i].CS.B.CODE = 0;   /* Inactivate all message buffers */
   } 
   
+  CAN_1.BUF[0].CS.B.CODE = 8;     /* Message Buffer 0 set to TX INACTIVE */
   
   
-  CAN_1.RXGMASK.R = 0x1FFFFFFF;   /* Global acceptance mask */
+  SIU.PCR[42].R = 0x0624;         /* MPC56xxB: Config port B0 as CAN0TX, open drain */
+  SIU.PCR[43].R = 0x0100;         /* MPC56xxB: Configure port B1 as CAN0RX */
   
-  SIU.PCR[42].R = 0x0624;         /* MPC56xxB: Config port C10 as CAN1TX, open drain */
-  SIU.PCR[35].R = 0x0100;         /* MPC56xxB: Configure port C3 as CAN1RX */
-  SIU.PSMI[0].R = 0x00;           /* MPC56xxB: Select PCR 35 for CAN1RX Input */
-  
-  CAN_1.MCR.R = 0x0000003F;       /* Negate FlexCAN 1 halt state for  64 MB */
+  CAN_1.MCR.R = 0x0000003F;       /* Negate FlexCAN 0 halt state for 64 MB */
 }
 
 uint8_t canBufferSetupRx(uint8_t ide, uint16_t msgId, uint8_t busSel, uint8_t buffer)
@@ -67,8 +65,8 @@ void initCAN_0 (void) {
   CAN_0.BUF[0].CS.B.CODE = 8;     /* Message Buffer 0 set to TX INACTIVE */
   
   
-  SIU.PCR[16].R = 0x0624;         /* MPC56xxB: Config port B0 as CAN0TX, open drain */
-  SIU.PCR[17].R = 0x0100;         /* MPC56xxB: Configure port B1 as CAN0RX */
+  SIU.PCR[42].R = 0x0624;         /* MPC56xxB: Config port B0 as CAN0TX, open drain */
+  SIU.PCR[43].R = 0x0100;         /* MPC56xxB: Configure port B1 as CAN0RX */
   
   CAN_0.MCR.R = 0x0000003F;       /* Negate FlexCAN 0 halt state for 64 MB */
 }
@@ -128,4 +126,19 @@ uint8_t RecieveMsgB1 ( uint8_t buffer) {
   }
   else
   return 0;
+}
+
+void TransmitMsgRef (U8* data, U8 dlc, U8 buff, U16 txId)
+ {
+  uint8_t	i;
+                               
+  CAN_1.BUF[buff].CS.B.IDE = 0;           /* Use standard ID length */
+  CAN_1.BUF[buff].ID.B.STD_ID = txId;      /* Transmit ID is 555 */
+  CAN_1.BUF[buff].CS.B.RTR = 0;           /* Data frame, not remote Tx request frame */
+  CAN_1.BUF[buff].CS.B.LENGTH = dlc -1 ; /* # bytes to transmit w/o null */
+  for (i=0; i<dlc; i++) {
+    CAN_1.BUF[buff].DATA.B[i] = *data++;      /* Data to be transmitted */
+  }
+  CAN_1.BUF[buff].CS.B.SRR = 1;           /* Tx frame (not req'd for standard frame)*/
+  CAN_1.BUF[buff].CS.B.CODE =0xC;         /* Activate msg. buf. to transmit data frame */ 
 }

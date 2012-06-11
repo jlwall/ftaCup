@@ -15,6 +15,7 @@ extern const vuint32_t IntcIsrVectorTable[];
 
 void initMainHardware(void)
 {	
+U16 temp;
 	disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 
 
@@ -25,20 +26,26 @@ void initMainHardware(void)
 		initPads ();
 	disableWatchdog();
 	init_LinFLEX_0_UART ();
-	initCAN_0();             /* Initialize FLEXCAN 0*/
+	initCAN_1();             /* Initialize FLEXCAN 0*/
 	
 		initADC();
 
 	initINTC();			/* Initialize INTC for software vector mode */
 	initPIT();		  	/* Initialize PIT1 for 1KHz IRQ, priority 2 */
 	initSwIrq4();			/* Initialize software interrupt 4 */
+	
+	SIU.PSMI[0].R = 1;  //can1rxd=43
+	SIU.PSMI[7].R = 2;  //dspi1_sscl=114
+	SIU.PSMI[8].R = 2;  //dspi1_sscl=114
+	SIU.PSMI[9].R = 3;  //dspi1_sscl=114
+
 
 EMIOS_0.MCR.B.GPRE= 63;   			/* Divide 64 MHz sysclk by 63+1 = 64 for 1MHz eMIOS clk*/
 	EMIOS_0.MCR.B.GPREN = 1;			/* Enable eMIOS clock */
 	EMIOS_0.MCR.B.GTBE = 1;  			/* Enable global time base */
 	EMIOS_0.MCR.B.FRZ = 1;    			/* Enable stopping channels when in debug mode */
 
-EMIOS_0.CH[0].CADR.R = 19999;   	/* Period will be 19999+1 = 20000 clocks (20 msec)*/
+EMIOS_0.CH[0].CADR.R = 14999;   	/* Period will be 19999+1 = 20000 clocks (20 msec)*/
 	EMIOS_0.CH[0].CCR.B.MODE = 0x50; 	/* Modulus Counter Buffered (MCB) */
 	EMIOS_0.CH[0].CCR.B.BSL = 0x3;   	/* Use internal counter */
 	EMIOS_0.CH[0].CCR.B.UCPRE=0;     	/* Set channel prescaler to divide by 1 */
@@ -84,6 +91,54 @@ EMIOS_0.CH[23].CADR.R = 999;      	/* Period will be 999+1 = 1000 clocks (1 msec
 	SIU.PCR[16].R = 0x0200;				/* Program the drive enable pin of Left Motor as output*/
 	SIU.PGPDO[0].R = 0x00000000;		/* Disable the motors */
 	
+	
+	
+	//init SBC for CAN
+	DSPI_1.MCR.R = 0x80010001; /* Configure DSPI_0 as master */
+DSPI_1.CTAR[0].R = 0x780A7727; /* Configure CTAR0 */
+DSPI_1.MCR.B.HALT = 0x0; /* Exit HALT mode: go from STOPPED to RUNNING state*/
+
+
+DSPI_1.PUSHR.R = 0x08011D00; /* Transmit data from master to slave SPI with EOQ */
+while(DSPI_1.SR.B.EOQF==0)
+{
+	
+};
+DSPI_1.SR.B.EOQF=1;
+
+
+temp = (U16)DSPI_1.POPR.R;
+
+
+
+DSPI_1.PUSHR.R = 0x080160C1; /* Transmit data from master to slave SPI with EOQ */
+while(DSPI_1.SR.B.EOQF==0)
+{
+	
+};
+DSPI_1.SR.B.EOQF=1;
+
+
+
+DSPI_1.PUSHR.R = 0x080140C0; /* Transmit data from master to slave SPI with EOQ */
+while(DSPI_1.SR.B.EOQF==0)
+{
+	
+};
+DSPI_1.SR.B.EOQF=1;
+
+
+temp = (U16)DSPI_1.POPR.R;
+
+
+DSPI_1.PUSHR.R = 0x08015E18; /* Transmit data from master to slave SPI with EOQ */
+while(DSPI_1.SR.B.EOQF==0)
+{
+	
+};
+DSPI_1.SR.B.EOQF=1;
+	
+	
 	enableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 	
 }
@@ -111,12 +166,17 @@ void initPads (void)
 	SIU.PCR[67].R = 0x0100;				/* Program the drive enable pin of S4 (PE3) as input*/
 	
 	SIU.PCR[28].R = 0x0600;           	/* MPC56xxB: Initialize PB[12] as eMIOS[4] output */
+	
+	SIU.PCR[113].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 SOUT output */
+SIU.PCR[112].R = 0x0903; /* MPC56xxP: Config pad as DSPI_0 SIN input */
+SIU.PCR[114].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 SCK output */
+SIU.PCR[115].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 PCS0 output */
 }
 
 void initADC(void) {
 	ADC.MCR.R = 0x80000000;         	/* Initialize ADC scan mode*/
 	ADC.NCMR[0].R = 0x00000001;      	/* Select ANP1:2 inputs for normal conversion */
-	ADC.CTR[0].R = 0x00008607;       	/* Conversion times for 32MHz ADClock */
+	ADC.CTR[0].R = 0x00008606;       	/* Conversion times for 32MHz ADClock */
     
 }
 
@@ -141,7 +201,10 @@ void initModesAndClock(void) {
 	//ME.PCTL[68].R = 0x0000;         	/* MPC56xxB/S SIUL:  select ME.RUNPC[0] */	
 	
 	ME.RUNPC[1].R = 0x00000010;     	/* Peri. Cfg. 1 settings: only run in RUN0 mode */
-	ME.PCTL[16].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
+	//ME.PCTL[4].R = 0x01; /* MPC56xxB/P/S DSPI0: select ME.RUNPC[1] */
+	ME.PCTL[5].R = 0x01; /* MPC56xxB/P/S DSPI1: select ME.RUNPC[1] */
+	//ME.PCTL[16].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
+	ME.PCTL[17].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
 	ME.PCTL[32].R = 0x01;       		/* MPC56xxB ADC 0: select ME.RUNPC[1] */
   	ME.PCTL[57].R = 0x01;       		/* MPC56xxB CTUL: select ME.RUNPC[1] */
   	ME.PCTL[48].R = 0x01;           	/* MPC56xxB/P/S LINFlex 0: select ME.RUNPC[1] */
