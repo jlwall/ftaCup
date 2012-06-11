@@ -21,8 +21,12 @@ namespace fsSim
             public float dterm;          
 
             public float radiusTarget;
+            public Int16 servoPWMTarget;
             public Int16 servoDegTarget;
             public UInt16 velTarget;
+            public UInt16 velBiasTarget;
+
+            public byte centerTarget;
 
             public byte center;
             public Int16 error;
@@ -345,11 +349,16 @@ namespace fsSim
                 car.turnRad = float.PositiveInfinity;
             }
             else
-            {
+        {
 
 
-                car.turnRad = car.cal.setupTrack / 2 + (car.cal.setupWheelBase / (float)Math.Sin(Math.Sinh((car.cal.servoArm * Math.Sin(car.servoDeg / 180 * Math.PI)) / car.cal.steeringNuckle)));
+                
+                car.turnRad =  (car.cal.setupWheelBase / (float)Math.Sin(Math.Sinh((car.cal.servoArm * Math.Sin(car.servoDeg / 180 * Math.PI)) / car.cal.steeringNuckle)));
 
+                if (car.servoDeg > 0)
+                    car.turnRad = car.turnRad- 307.4336015f + car.cal.setupTrack / 2;
+                else
+                    car.turnRad = car.turnRad + 307.4336015f - car.cal.setupTrack / 2;
             //    if (car.servoDeg < 0)
               //      car.turnRad = -car.turnRad;
 
@@ -373,13 +382,13 @@ namespace fsSim
             car.accel = car.vel * car.vel / car.turnRad;
 
 
-            if (car.accel > 50)
+            if (car.accel > 2100)
             {
                 car.ctrl.inCorner = true;
                 car.ctrl.turnLeft = true;
                 car.ctrl.turnRight = false;
             }
-            else if (car.accel < -50)
+            else if (car.accel < -2100)
             {
                 car.ctrl.inCorner = true;
                 car.ctrl.turnLeft = false;
@@ -436,28 +445,27 @@ namespace fsSim
                         car.lightSense.rightOn = 127;
                         car.lightSense.senseWide = car.lightSense.rightOn - car.lightSense.leftOn;
                     }
-                }
-               
+                }             
+            }
+
+
+            if ((car.lightSense.senseWide > 12) && (car.lightSense.senseWide < 40))
+            {
+                car.lightSense.valid = 1;
+                Random r = new Random();
+
+                Double rr = 0;// r.NextDouble();
+
+               // car.lightSense.leftOn += (int)(((float)rr - 0.5f) * 15.0f);
+
+              //  rr = r.NextDouble();
+
+                //car.lightSense.rightOn += (int)(((float)rr - 0.5f) * 15.0f);
+                car.lightSense.senseWide = car.lightSense.rightOn - car.lightSense.leftOn;
 
             }
-            car.ctrl.c4 = car.ctrl.c3;
-            car.ctrl.c3 = car.ctrl.c2;
-            car.ctrl.c2 = car.ctrl.c1;
-            car.ctrl.c1 = car.ctrl.center;
-            car.ctrl.center = (byte)(car.lightSense.leftOn + car.lightSense.senseWide / 2);
-
-            car.ctrl.errorRate = (Int16)(((car.ctrl.error * 4 / 5) + (64 - car.ctrl.center)) / 5);
-
-            car.ctrl.error = (Int16)(64 - car.ctrl.center);
-
-            if ( (Math.Abs(car.ctrl.error) < car.cal.errorTol*2) & (Math.Abs(car.turnRad )> 5000))
-                car.ctrl.iTerm = 0;
             else
-            car.ctrl.iTerm += car.ctrl.errorRate;
-
-
-            car.ctrl.dterm = ((car.ctrl.center - car.ctrl.c4) * 4 + car.ctrl.dterm)/5;//(car.ctrl.dterm*4/4000 + (car.ctrl.c4 - car.ctrl.center))/5 * 1000;
-         
+                car.lightSense.valid = 0;
 
 //            Console.WriteLine(car.ctrl.center.ToString());
         }
@@ -478,48 +486,58 @@ namespace fsSim
             if (car.servoDeg < -65) car.servoDeg = -65;
 
             //process Speed
-            car.vel += (car.ctrl.velTarget - car.vel) / 850;
+            car.vel += (car.ctrl.velTarget - car.vel) / 450;
+
+
+            if (car.ctrl.servoPWMTarget > 20)
+                car.ctrl.centerTarget = (byte)((car.ctrl.centerTarget + (byte)(64 + ((car.ctrl.servoPWMTarget) / 20))) / 2);
+            else if (car.ctrl.servoPWMTarget <-20)
+                car.ctrl.centerTarget = (byte)((car.ctrl.centerTarget + (byte)(64 + (( car.ctrl.servoPWMTarget) / 20))) / 2);
+            else
+                car.ctrl.centerTarget = (byte)((car.ctrl.centerTarget + 64) / 2);
 
           
-                if (car.ctrl.error > car.cal.errorTol)
-                {
-                    car.ctrl.radiusTarget = ((4000-((float)car.ctrl.errorRate) * car.cal.servGain) - car.ctrl.iTerm * car.cal.servGainIgain - car.ctrl.dterm * car.cal.servGainDTerm);
-                    if (car.ctrl.radiusTarget < 300)
-                        car.ctrl.radiusTarget = 300;
-                }
-                else if (car.ctrl.error < -car.cal.errorTol)
-                {
-                    car.ctrl.radiusTarget = -((4000 + ((float)car.ctrl.errorRate) * car.cal.servGain) + car.ctrl.iTerm * car.cal.servGainIgain + car.ctrl.dterm * car.cal.servGainDTerm);
-                    if (car.ctrl.radiusTarget > -300)
-                        car.ctrl.radiusTarget = -300;
-                }
-                else
-                {
-                    if(car.ctrl.error>0)
-                    car.ctrl.radiusTarget = 4000;
-                    else
-                        car.ctrl.radiusTarget = -4000;
-                }
+               
 
                 //20mSecSevoPWM Update
                 int rem = 1;
-                Math.DivRem(runStep, 20, out rem);
+                Math.DivRem(runStep, 10, out rem);
 
-                if (rem == 0)
+                if (rem == 0 & car.lightSense.valid==1)
                 {
-                    float stn=0;
-                if (Math.Abs(car.ctrl.radiusTarget) < 6000)
-                {
-                    if (car.ctrl.radiusTarget > 0)
-                        stn = 76970 * (float)Math.Pow(car.ctrl.radiusTarget, -1.239);
-                    else
-                        stn = -76970 * (float)Math.Pow(-car.ctrl.radiusTarget, -1.239);
+                    car.ctrl.c4 = car.ctrl.c3;
+                    car.ctrl.c3 = car.ctrl.c2;
+                    car.ctrl.c2 = car.ctrl.c1;
+                    car.ctrl.c1 = car.ctrl.center;
+                    car.ctrl.center = (byte)((car.lightSense.leftOn + car.lightSense.rightOn) / 2);
 
-                }
+                    car.ctrl.error = (Int16)(car.ctrl.centerTarget - car.ctrl.center);
+
+                    if ((Math.Abs(car.ctrl.error) > car.cal.errorTol * 2))
+                        car.ctrl.iTerm += car.ctrl.error * car.cal.servGainIgain;
+
+                    if (car.ctrl.iTerm > 300) car.ctrl.iTerm = 300;
+                    else if (car.ctrl.iTerm < -300) car.ctrl.iTerm = -300;
+
+                    car.ctrl.dterm = (car.ctrl.dterm * 85 + (car.ctrl.c4 - car.ctrl.center) * car.cal.servGainDTerm * 15) / 100.0f;//(car.ctrl.dterm*4/4000 + (car.ctrl.c4 - car.ctrl.center))/5 * 1000;
+      
+
+                    car.ctrl.servoPWMTarget = (short)(car.ctrl.iTerm + car.ctrl.dterm + car.ctrl.error * car.cal.servGain);
+
+                    if (car.ctrl.servoPWMTarget > 300)
+                        car.ctrl.servoPWMTarget = 300;
+                    if (car.ctrl.servoPWMTarget < -300)
+                        car.ctrl.servoPWMTarget = -300;
+
+                car.ctrl.servoDegTarget = (Int16)((float)car.ctrl.servoPWMTarget / 695.5033146f * 90.0f);
 
 
-                car.ctrl.servoDegTarget = (Int16)((stn * 3 + car.ctrl.servoDegTarget) / 4);
-
+                if (car.ctrl.servoPWMTarget > 40)
+                    car.ctrl.velBiasTarget = (UInt16)(493.18 - car.ctrl.servoPWMTarget * 0.1264 - car.ctrl.servoPWMTarget * car.ctrl.servoPWMTarget * 0.0007);
+                else if (car.ctrl.servoPWMTarget < -40)
+                    car.ctrl.velBiasTarget = (UInt16)(506.82 - car.ctrl.servoPWMTarget * 0.1264 + car.ctrl.servoPWMTarget * car.ctrl.servoPWMTarget * 0.0007);
+                else
+                    car.ctrl.velBiasTarget = 500;
 
 
                 if (car.ctrl.servoDegTarget > 70) 
@@ -569,9 +587,9 @@ namespace fsSim
         {
             cpHist = new List<carPos>();
 
-            car.x = 200;
-            car.y = 1900;
-            car.dir = Math.PI / 2 ;
+            car.x = 400;
+            car.y = 2000;
+            car.dir = Math.PI / 2 *20/16;
             car.servoDeg = 0;
             car.turnRad = 500000;
             car.vel = 0;//200mm/s
@@ -582,18 +600,19 @@ namespace fsSim
 
             car.cal = new calibrationS();
 
-            car.cal.setupTrack = 190;
-            car.cal.setupWheelBase = 270;
-            car.cal.servoArm = 25;
-            car.cal.steeringNuckle = 20;
+            car.cal.setupTrack = 140;
+            car.cal.setupWheelBase = 210;
+            car.cal.servoArm = 13;
+            car.cal.steeringNuckle = 22;
 
 
 
-            car.lightSense.posX = 120;
+            car.lightSense.posX = 200;
             car.lightSense.width = 80;
 
             car.ctrl = new carControl();
             car.ctrl.center = 64;
+            car.ctrl.centerTarget = 64;
             car.ctrl.iTerm = 0;
             runStep = 0;
 
@@ -605,6 +624,8 @@ namespace fsSim
             catch (Exception ee)
             {
             }
+
+            
 
             try { car.cal.servGainIgain = Convert.ToSingle(txtGainServoDT.Text); }
             catch (Exception ee)
@@ -620,6 +641,8 @@ namespace fsSim
             catch (Exception ee)
             {
             }
+
+           // car.cal.servGainDTerm = Convert.ToSingle(txtGainServoDGain.Text) + (10.0f - errorSweep) / 10.0f;
 
             try { car.cal.maxSpeed = Convert.ToUInt16(txtMavV.Text); }
             catch (Exception ee)
@@ -643,18 +666,20 @@ namespace fsSim
 
             errorMean = 0;
             sr = new StreamWriter("C:/fsCup.e2csv");
-            sr.WriteLine("time,posX,posY,speed,speedTarget,accel,turnRad,servoDeg,servoDegTarget,dir,senseL,senseR,senseW,ctError,ctErrorRate,ctcenter,dterm,radiusTarget,bTurn,bL,bR,iterm");
-            sr.WriteLine("sec,mm,mm,mm/s,mm/s,g,mm,deg,deg,rad,x,x,mm,x,x,x,x,mm,b,b,b,x");
+            sr.WriteLine("time,posX,posY,speed,speedTarget,accel,turnRad,servoDeg,servoDegTarget,servoPwmTarget,dir,senseL,senseR,senseW,ctError,ctErrorRate,ctcenter,dterm,radiusTarget,biasVelTarget,bTurn,bL,bR,iterm,centerTarget");
+            sr.WriteLine("sec,mm,mm,mm/s,mm/s,g,mm,deg,deg,rad,x,x,x,mm,x,x,x,x,mm,rat,b,b,b,x,x");
             double lapTime = 0;
             for (int i = 0; i < 45000; i++)
             {
                 renderCarStep(1000);
                 int rem;
-                Math.DivRem(runStep, 4, out rem);
-                if (rem == 0)
+                
                     updateSensor();
 
-                updateControls();
+                Math.DivRem(runStep, 5, out rem);
+                if (rem == 0)
+                    updateControls();
+
                 sr.Write(((float)i / 1000).ToString() + ",");
                 sr.Write(car.x.ToString("F3") + ",");
                 sr.Write(car.y.ToString("F3") + ",");
@@ -664,6 +689,7 @@ namespace fsSim
                 sr.Write(car.turnRad.ToString("F3") + ",");
                 sr.Write(car.servoDeg.ToString("F3") + ",");
                 sr.Write(car.ctrl.servoDegTarget.ToString("F3") + ",");
+                sr.Write(car.ctrl.servoPWMTarget.ToString() + ",");
                 sr.Write(car.dir.ToString("F3") + ",");
                 sr.Write(car.lightSense.leftOn.ToString() + ",");
                 sr.Write(car.lightSense.rightOn.ToString() + ",");
@@ -673,6 +699,7 @@ namespace fsSim
                 sr.Write(car.ctrl.center.ToString() + ",");
                 sr.Write(car.ctrl.dterm.ToString() + ",");
                 sr.Write(car.ctrl.radiusTarget.ToString() + ",");
+                sr.Write(car.ctrl.velBiasTarget.ToString() + ",");
                 if(car.ctrl.inCorner)
                     sr.Write("1,");
                 else
@@ -687,8 +714,8 @@ namespace fsSim
                     sr.Write("1,");
                 else
                     sr.Write("0,");
-                
-                sr.WriteLine(car.ctrl.iTerm.ToString() + ",");
+                sr.Write(car.ctrl.iTerm.ToString() + ",");
+                sr.WriteLine(car.ctrl.centerTarget.ToString() + ",");
 
                 lapTime = i / 1000f;
                 carPos cc = new carPos();
@@ -716,7 +743,7 @@ namespace fsSim
 
         private void button3_Click(object sender, EventArgs e)
         {
-           // for (int i = 1; i < 20; i++)
+       //     for (int i = 0; i < 20; i++)
             {
 
                 simulate(0);
@@ -915,6 +942,11 @@ namespace fsSim
 
             if (spCar.IsOpen)
                 spCar.Write("f");
+        }
+
+        private void txtGainServo_TextChanged(object sender, EventArgs e)
+        {
+
         }
 
 

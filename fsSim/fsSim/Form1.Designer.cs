@@ -134,7 +134,8 @@
             this.txtGainServo.Name = "txtGainServo";
             this.txtGainServo.Size = new System.Drawing.Size(100, 20);
             this.txtGainServo.TabIndex = 5;
-            this.txtGainServo.Text = "400";
+            this.txtGainServo.Text = "8";
+            this.txtGainServo.TextChanged += new System.EventHandler(this.txtGainServo_TextChanged);
             // 
             // txtGainServoDT
             // 
@@ -142,7 +143,7 @@
             this.txtGainServoDT.Name = "txtGainServoDT";
             this.txtGainServoDT.Size = new System.Drawing.Size(100, 20);
             this.txtGainServoDT.TabIndex = 6;
-            this.txtGainServoDT.Text = "4";
+            this.txtGainServoDT.Text = ".2";
             // 
             // txtErrorTol
             // 
@@ -150,7 +151,7 @@
             this.txtErrorTol.Name = "txtErrorTol";
             this.txtErrorTol.Size = new System.Drawing.Size(100, 20);
             this.txtErrorTol.TabIndex = 7;
-            this.txtErrorTol.Text = "1";
+            this.txtErrorTol.Text = "5";
             // 
             // txtGainServoDGain
             // 
@@ -158,7 +159,7 @@
             this.txtGainServoDGain.Name = "txtGainServoDGain";
             this.txtGainServoDGain.Size = new System.Drawing.Size(100, 20);
             this.txtGainServoDGain.TabIndex = 8;
-            this.txtGainServoDGain.Text = "5";
+            this.txtGainServoDGain.Text = "4";
             // 
             // label2
             // 
