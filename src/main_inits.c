@@ -165,6 +165,12 @@ void initPads (void)
 	SIU.PCR[66].R = 0x0100;				/* Program the drive enable pin of S3 (PE2) as input*/
 	SIU.PCR[67].R = 0x0100;				/* Program the drive enable pin of S4 (PE3) as input*/
 	
+		//DIP SWITCH IN
+	SIU.PCR[102].R = 0x0100;				/* Program the drive enable pin of S1 (PE0) as input*/
+	SIU.PCR[103].R = 0x0100;				/* Program the drive enable pin of S2 (PE1) as input*/
+	SIU.PCR[104].R = 0x0100;				/* Program the drive enable pin of S3 (PE2) as input*/
+	SIU.PCR[105].R = 0x0100;				/* Program the drive enable pin of S4 (PE3) as input*/
+	
 	SIU.PCR[28].R = 0x0600;           	/* MPC56xxB: Initialize PB[12] as eMIOS[4] output */
 	
 	SIU.PCR[113].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 SOUT output */

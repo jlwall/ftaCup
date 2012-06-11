@@ -19,6 +19,16 @@ void task_1000msec(void);
 void Pit1ISR(void);
 void SwIrq4ISR(void);
 
+struct CAR_ADJUST
+{
+	
+	float adjPgain;
+	float adjIgain;
+	float adjDgain;
+	float adjSpeedgain;
+	
+};
+
 struct CAR_CAL 
 {
 	float servGain;
@@ -65,6 +75,12 @@ struct LIGHT_SENSOR
 };
 
 struct CAR_CTRL {
+
+float pGain;
+float iGain;
+float dGain;
+float speedGain;
+
 float iTerm;
 float dterm;  
 float radiusTarget;
@@ -84,4 +100,5 @@ U8 manualMode;
 struct CAR {
 struct CAR_CTRL ctrl;
 struct LIGHT_SENSOR sensor;
+struct CAR_ADJUST adjust;
 };

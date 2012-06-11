@@ -92,6 +92,11 @@ int main(void)
 	car.ctrl.targetServoPos = 0;
 	car.ctrl.targetVelocity = 0;
 	car.ctrl.manualMode = 0;
+	
+	car.adjust.adjPgain = 0;
+	car.adjust.adjIgain = 0;
+	car.adjust.adjDgain = 0;
+	car.adjust.adjSpeedgain = 0;
 
 	initMainHardware();
   
@@ -202,13 +207,13 @@ void task_2msec()
 
 void task_5msec()
 {
- 		if(car.ctrl.manualMode==2)	//auto pilot Mode
+ 	if(car.ctrl.manualMode==2)	//auto pilot Mode
 	{
 	
 		//set the steering position, iTerm
-		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
+	if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
 		{					
-			car.ctrl.iTerm += (float)car.ctrl.error * cal.servGainIgain;
+			car.ctrl.iTerm += (float)car.ctrl.error * car.ctrl.iGain;
 			
 			//Limit the iTerm
 			if(car.ctrl.iTerm > cal.servGainIgainLimit)
@@ -217,16 +222,17 @@ void task_5msec()
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
 		}
 		
-		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * cal.servGainDTerm;
+		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
 		
 		
 		//set the position, P, and I term only here
-		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*cal.servGain + car.ctrl.iTerm + car.ctrl.dterm);
+		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
 		
-			//limit the servo Travel
-		if(car.ctrl.targetServoPos < -constServoMax)
+		//set the position, P, and I term only here
+	//	car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain;
+		if(car.ctrl.targetServoPos<-constServoMax)
 			car.ctrl.targetServoPos = -constServoMax;
-		else if(car.ctrl.targetServoPos > constServoMax)
+		else if(car.ctrl.targetServoPos>constServoMax)
 			car.ctrl.targetServoPos = constServoMax;
 			
 			
@@ -236,11 +242,11 @@ void task_5msec()
 			
 			//set the target open loop velocity
 			if(car.ctrl.error < -cal.errorTol)
-				car.ctrl.targetVelocity = (U16)(cal.maxSpeed + car.ctrl.error*cal.servGain);
+				car.ctrl.targetVelocity = (U16)((U16)car.ctrl.speedGain + car.ctrl.error*cal.servGain);
 			else if(car.ctrl.error > cal.errorTol)
-				car.ctrl.targetVelocity = (U16)(cal.maxSpeed - car.ctrl.error*cal.servGain);
+				car.ctrl.targetVelocity = (U16)((U16)car.ctrl.speedGain - car.ctrl.error*cal.servGain);
 			else
-				car.ctrl.targetVelocity = cal.maxSpeed;
+				car.ctrl.targetVelocity = (U16)car.ctrl.speedGain;
 			
 
 			//aditional speed damping for turning events
@@ -265,9 +271,9 @@ void task_5msec()
 		car.ctrl.biasVelocity = constBiasCenter;	
 		
 		
-			if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
+		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
 		{					
-			car.ctrl.iTerm += (float)car.ctrl.error * cal.servGainIgain;
+			car.ctrl.iTerm += (float)car.ctrl.error * car.ctrl.iGain;
 			
 			//Limit the iTerm
 			if(car.ctrl.iTerm > cal.servGainIgainLimit)
@@ -276,11 +282,11 @@ void task_5msec()
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
 		}
 		
-		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * cal.servGainDTerm;
+		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
 		
 		
 		//set the position, P, and I term only here
-		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*cal.servGain + car.ctrl.iTerm + car.ctrl.dterm);
+		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
 		
 		//set the position, P, and I term only here
 	//	car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain;
@@ -309,6 +315,7 @@ void task_5msec()
 
 void task_10msec()
 {
+	//setup Capturing update of new Line
 	u8Capture_Pixel_Values();
 	
 
@@ -320,7 +327,68 @@ void task_10msec()
 void task_20msec()
 {
 
-	SIU.GPDO[68].R = 1-car.sensor.valid;
+
+
+	taskCTR_20msec=0;
+}
+
+
+void task_40msec()
+{
+U16 tempADC;
+	//Check to see if Auto Mode was enabled (SW4)
+	if((SIU.PGPDI[2].R & 0x10000000) == 0x0000000)
+	{
+		SIU.PGPDO[0].R = 0x0000C000;  //Enable Motors
+		
+		
+		//Set the active Gains
+		car.ctrl.pGain =  cal.servGain + car.adjust.adjPgain;
+		car.ctrl.iGain =  cal.servGainIgain + car.adjust.adjIgain;
+		car.ctrl.dGain =  cal.servGainDTerm + car.adjust.adjDgain;
+		car.ctrl.speedGain =  cal.maxSpeed + car.adjust.adjSpeedgain;
+		 
+		car.ctrl.autoTimer = cal.runTime;
+		car.ctrl.manualMode = 2;		
+	}
+
+	//SWITCH 1 is on for Mod Mode
+	if((SIU.PGPDI[2].R & 0x80000000) == 0x0000000)
+	{
+	
+			//ADC pot
+			ADC.NCMR[0].R = 0x00000002;      	/* Select ANP1:2 inputs for normal conversion */
+			ADC.MCR.B.NSTART = 1;   	
+			while(	ADC.MCR.B.NSTART ==1)
+			{			
+			};
+			tempADC = (U16)(ADC.CDR[1].B.CDATA);
+			ADC.NCMR[0].R = 0x00000001;      	/* Select ANP1:2 inputs for normal conversion */
+		
+			if(SIU.GPDI[102].R== 0x01) // P gain Mod
+			{	
+			car.adjust.adjPgain = ((float)tempADC - 512) * cal.servGain;
+			}
+			else if(SIU.GPDI[103].R== 0x01) // P gain Mod
+			{	
+			car.adjust.adjIgain = ((float)tempADC - 512) * cal.servGainIgain;
+			}
+			else if(SIU.GPDI[104].R== 0x01) // P gain Mod
+			{	
+			car.adjust.adjDgain = ((float)tempADC - 512) * cal.servGainDTerm;
+			}
+			else if(SIU.GPDI[105].R== 0x01) // P gain Mod
+			{	
+			car.adjust.adjSpeedgain = ((float)tempADC - 512) * cal.maxSpeed;
+			}
+		
+	
+	
+	
+	}
+	else //use this leg for LED control of sensor Status
+	{
+			SIU.GPDO[68].R = 1-car.sensor.valid;
 	if(car.ctrl.error<2 & car.ctrl.error>-2)
 		SIU.GPDO[69].R = 0;
 	else
@@ -331,24 +399,13 @@ void task_20msec()
 	else
 		SIU.GPDO[70].R = 1;
 	
-	if(car.sensor.threshold>cal.sensorMinDynRange & car.sensor.threshold<200)
+	if(car.sensor.threshold>cal.sensorMinDynRange)
 		SIU.GPDO[71].R = 0;
 	else
 		SIU.GPDO[71].R = 1;
-
-	taskCTR_20msec=0;
-}
-
-
-void task_40msec()
-{
-
-	if((SIU.PGPDI[2].R & 0x10000000) == 0x0000000)
-	{
-		SIU.PGPDO[0].R = 0x0000C000;
-		car.ctrl.autoTimer = cal.runTime;
-		car.ctrl.manualMode = 2;		
+		
 	}
+	
 	
 
 	taskCTR_40msec=0;
