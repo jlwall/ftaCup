@@ -43,7 +43,7 @@ void u8Capture_Pixel_Values(void)
 	S32 	avgSum=0;
 
 	car.sensor.valMax = 0;
-	car.sensor.valMin = 255;
+	car.sensor.valMin = 1024;
 	
 	SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
 	SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
@@ -64,12 +64,12 @@ void u8Capture_Pixel_Values(void)
 		while(	ADC.MCR.B.NSTART ==1)
 			{			
 			};
-                if(i<64)
-			car.sensor.array[i] = (U8)(ADC.CDR[0].B.CDATA >> 2) + (64-i)/4;
+           if(i<64)
+			car.sensor.array[i] = (U16)(ADC.CDR[0].B.CDATA );// + (64-i)/8;
 		else
-			car.sensor.array[i] = (U8)(ADC.CDR[0].B.CDATA >> 2) + (i-64)/4;
+			car.sensor.array[i] = (U16)(ADC.CDR[0].B.CDATA );// + (i-64)/8;
 
-		if((i>5) & i < 123)  //if we are in edgeless zone, lets find the min and max,
+		if((i>2) & i < 126)  //if we are in edgeless zone, lets find the min and max,
 			{	
 			if(car.sensor.valMin > car.sensor.array[i]) //if a new min is found, latch it
 				{
@@ -90,13 +90,13 @@ void u8Capture_Pixel_Values(void)
 	car.sensor.cornLeft = u8minpos;
 	car.sensor.cornRight = u8minpos;
 	
-  	while(((car.sensor.array[car.sensor.cornLeft])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornLeft>5))
+  	while(((car.sensor.array[car.sensor.cornLeft])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornLeft>2))
 		{
 		car.sensor.cornLeft--;	
 		}
 		
 		
-	while(((car.sensor.array[car.sensor.cornRight])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornRight<123))
+	while(((car.sensor.array[car.sensor.cornRight])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornRight<126))
 		{
 		car.sensor.cornRight++;	
 		}
@@ -111,19 +111,19 @@ void u8Capture_Pixel_Values(void)
 	car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)/2;
 
 	//A tap delay to help average the center measured position
-	car.sensor.center = (car.sensor.center * 4 + car.sensor.c1 * 3 + car.sensor.c2 * 2 + car.sensor.c3)/10;
+	//car.sensor.center = (car.sensor.center * 4 + car.sensor.c1 * 3 + car.sensor.c2 * 2 + car.sensor.c3)/10;
 	
 
-	if((car.sensor.width >= cal.senseWidthMin) && (car.sensor.width <= cal.senseWidthMax) && (car.sensor.threshold > cal.sensorMinDynRange))
+	if((car.sensor.width >= cal.senseWidthMin) && (car.sensor.width <= cal.senseWidthMax) && (car.sensor.threshold >= cal.sensorMinDynRange))
 	{
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-64)))/2;
+		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))/2;
 		
 		if(car.ctrl.error<-cal.sensorMaxError)
 			car.ctrl.error = (S16)-cal.sensorMaxError;
 		else if(car.ctrl.error>cal.sensorMaxError)
 			car.ctrl.error = (S16)cal.sensorMaxError;
 		
-		car.ctrl.dTerm = (car.sensor.center - car.sensor.c2) * cal.dGain;
+		
 		car.sensor.valid = 1;
 	}
 	else
@@ -137,13 +137,13 @@ void u8Capture_Pixel_Values(void)
 
 
 	//cross validate the sensor reading, checking the weighting average
-	if(car.sensor.valid == 1)
+/*	if(car.sensor.valid == 1)
 	{
 		if((avgSum > 20) & (car.ctrl.error < -2))
 			car.sensor.valid = 0;
 		else if((avgSum < -20) & (car.ctrl.error >2))
 			car.sensor.valid = 0;
-	}
+	}*/
 
 }
   			

@@ -39,14 +39,14 @@ struct CAR_CAL
 	U8  senseWidthMin;
 	U8  senseWidthMax;
 	U8  runTime;
-	U8  sensorMinDynRange;
+	U16  sensorMinDynRange;
 	S8  sensorMaxError;
 	
 };
 
 struct LIGHT_SENSOR
 {
-	U8  array[128];
+	U16  array[128];
 	U8	cornLeft;
 	U8	cornRight;
 	U8 	width;
@@ -56,9 +56,10 @@ struct LIGHT_SENSOR
 	U8  c3;
 	U8  c4;
 	U8  valid;
-	U8  threshold;
-	U8  valMax;
-	U8  valMin;
+	U16  threshold;
+	U16  valMax;
+	U16  valMin;
+	
 	
 	
 };
@@ -76,6 +77,8 @@ U16 velTarget;
 S16 error;
 U8 autoTimer;
 U8 manualMode;
+
+	U8  controlCenter;
 } ;
 
 struct CAR {
