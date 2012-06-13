@@ -52,9 +52,9 @@ const struct CAR_CAL cal =
 	U8  sensorMinDynRange;
 	S8  sensorMaxError;
 */
-	6.2,
-	0.1,
-	0.5,
+	7.2,
+	0.2,
+	4.2,
 	
 	190,
 	270,
@@ -69,11 +69,11 @@ const struct CAR_CAL cal =
 	650,
 	220,
 	
-	10,
-	30,
+	4,
+	60,
 	60,
 	
-	35,60
+	20,60
 };
 
 
@@ -97,6 +97,12 @@ int main(void)
 	car.adjust.adjIgain = 0;
 	car.adjust.adjDgain = 0;
 	car.adjust.adjSpeedgain = 0;
+	
+		//Set the active Gains
+		car.ctrl.pGain =  cal.servGain + car.adjust.adjPgain;
+		car.ctrl.iGain =  cal.servGainIgain + car.adjust.adjIgain;
+		car.ctrl.dGain =  cal.servGainDTerm + car.adjust.adjDgain;
+		car.ctrl.speedGain =  cal.maxSpeed + car.adjust.adjSpeedgain;
 
 	initMainHardware();
   
@@ -315,19 +321,16 @@ void task_5msec()
 
 void task_10msec()
 {
-	//setup Capturing update of new Line
-	u8Capture_Pixel_Values();
-	
-
-
-	taskCTR_10msec=0;
+ 	taskUpdateCameraStart();	
+ 	taskCTR_10msec=0;
 }
 
 
 void task_20msec()
 {
-
-
+	//setup Capturing update of new Line
+	//u8Capture_Pixel_Values();
+	
 
 	taskCTR_20msec=0;
 }
@@ -386,8 +389,11 @@ U16 tempADC;
 	
 	
 	}
-	else //use this leg for LED control of sensor Status
-	{
+	else 
+	{//use this leg for LED control of sensor Status
+	
+	
+	
 			SIU.GPDO[68].R = 1-car.sensor.valid;
 	if(car.ctrl.error<2 & car.ctrl.error>-2)
 		SIU.GPDO[69].R = 0;
@@ -403,9 +409,7 @@ U16 tempADC;
 		SIU.GPDO[71].R = 0;
 	else
 		SIU.GPDO[71].R = 1;
-		
 	}
-	
 	
 
 	taskCTR_40msec=0;
@@ -459,7 +463,7 @@ void task_1000msec()
 
 void Delay(void)
 {
-  for(dly=0;dly<120;dly++)
+  for(dly=0;dly<40;dly++)
   {  	
   };
 }
@@ -503,6 +507,12 @@ void Pit1ISR(void)
  	PIT.CH[1].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
 }
 
+
+void Pit2ISR(void) 
+{
+	taskUpdateCamera();
+	PIT.CH[2].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
+}
 
 
 void SwIrq4ISR(void)

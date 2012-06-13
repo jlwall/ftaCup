@@ -17,6 +17,7 @@ void task_500msec(void);
 void task_1000msec(void);
 
 void Pit1ISR(void);
+void Pit2ISR(void);
 void SwIrq4ISR(void);
 
 struct CAR_ADJUST

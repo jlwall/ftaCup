@@ -56,4 +56,8 @@ uint16_t u16Pulse_Width(void);
 uint16_t u16Delta_X(void);
 void u8Capture_Pixel_Values(void);
 
+void taskUpdateCamera(void);
+void taskUpdateCameraStart(void);
+void taskUpdateCameraEnd(void);
+
 

@@ -31,8 +31,139 @@ extern const struct CAR_CAL cal;
 /**************************************************************************************************************/
 /*          		   		FUNCTIONS USING ADC MODULE TO READ CAMERA OUTPUT   		                          */
 /**************************************************************************************************************/
-						
 
+
+	vU8 iCamera;
+	vU8 cameraTaskState;
+	vU8 minPosCamera;						
+
+void taskUpdateCamera(void)
+{
+	if(cameraTaskState==1)
+	{
+		
+	
+		SIU.PGPDO[0].R |= 0x00000004;	/* Sensor Clock High */	
+		ADC.MCR.B.NSTART = 1;   	
+		while(	ADC.MCR.B.NSTART ==1)
+			{			
+			};
+			
+        if(iCamera<64)
+			car.sensor.array[iCamera] = (U16)(ADC.CDR[0].B.CDATA );// + (64-i)/8;
+		else
+			car.sensor.array[iCamera] = (U16)(ADC.CDR[0].B.CDATA );// + (i-64)/8;
+
+		if((iCamera>2) & iCamera < 126)  //if we are in edgeless zone, lets find the min and max,
+			{	
+			if(car.sensor.valMin > car.sensor.array[iCamera]) //if a new min is found, latch it
+				{
+				car.sensor.valMin = car.sensor.array[iCamera];
+				minPosCamera = iCamera;								// set the mim pos
+				}
+			if(car.sensor.valMax < car.sensor.array[iCamera])
+				{
+				car.sensor.valMax = car.sensor.array[iCamera];			
+				} 	
+			}	
+			cameraTaskState=0;
+			iCamera += 1;
+			if(iCamera >127)
+				taskUpdateCameraEnd();	
+	}
+	else
+	{
+		
+	SIU.PGPDO[0].R &= ~0x00000004;	/* Sensor Clock Low */	
+	cameraTaskState=1;
+	}
+	
+}
+
+void taskUpdateCameraStart(void)
+{
+	car.sensor.valMax = 0;
+	car.sensor.valMin = 0xFFFF;
+	
+	SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
+	SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
+	
+	SIU.PGPDO[0].R &= ~0x00000014;		/* All port line low */
+	SIU.PGPDO[0].R |= 0x00000010;		/* Sensor read start High */
+	Delay();
+	SIU.PGPDO[0].R |= 0x00000004;		/* Sensor Clock High */
+	Delay();
+	SIU.PGPDO[0].R &= ~0x00000010;		/* Sensor read start Low */ 
+	Delay();
+	SIU.PGPDO[0].R &= ~0x00000004;		/* Sensor Clock Low */
+	Delay();
+	
+	iCamera = 0;
+	cameraTaskState = 0;
+	
+	PIT.CH[2].TCTRL.B.TEN = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
+}
+
+void taskUpdateCameraEnd(void)
+{
+	U8 i;
+	U32 avgSum = 0;
+	
+	PIT.CH[2].TCTRL.B.TEN = 0;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
+	
+	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)/2;	
+	car.sensor.cornLeft = minPosCamera;
+	car.sensor.cornRight = minPosCamera;
+	
+  	while(((car.sensor.array[car.sensor.cornLeft])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornLeft>2))
+		{
+		car.sensor.cornLeft--;	
+		}
+		
+		
+	while(((car.sensor.array[car.sensor.cornRight])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornRight<126))
+		{
+		car.sensor.cornRight++;	
+		}
+
+	car.sensor.width = car.sensor.cornRight - car.sensor.cornLeft;
+	
+	car.sensor.c4 = car.sensor.c3;
+	car.sensor.c3 = car.sensor.c2;
+	car.sensor.c2 = car.sensor.c1;
+	car.sensor.c1 = car.sensor.center;
+	
+	car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)/2;
+
+	//A tap delay to help average the center measured position
+	//car.sensor.center = (car.sensor.center * 4 + car.sensor.c1 * 3 + car.sensor.c2 * 2 + car.sensor.c3)/10;
+	
+
+	if((car.sensor.width >= cal.senseWidthMin) && (car.sensor.width <= cal.senseWidthMax) && (car.sensor.threshold >= cal.sensorMinDynRange))
+	{
+		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))/2;
+		
+		if(car.ctrl.error<-cal.sensorMaxError)
+			car.ctrl.error = (S16)-cal.sensorMaxError;
+		else if(car.ctrl.error>cal.sensorMaxError)
+			car.ctrl.error = (S16)cal.sensorMaxError;
+		
+		
+		car.sensor.valid = 1;
+	}
+	else
+		car.sensor.valid = 0;
+
+	//averaging Method
+	for(i=0;i<64;i++)
+	{		
+		avgSum += car.sensor.array[i] - car.sensor.array[127-i];
+	}
+
+
+
+	
+}
 
  
 void u8Capture_Pixel_Values(void)
@@ -43,7 +174,7 @@ void u8Capture_Pixel_Values(void)
 	S32 	avgSum=0;
 
 	car.sensor.valMax = 0;
-	car.sensor.valMin = 1024;
+	car.sensor.valMin = 0xFFFF;
 	
 	SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
 	SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
