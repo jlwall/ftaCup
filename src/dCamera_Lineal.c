@@ -66,10 +66,10 @@ void taskUpdateCamera(void)
 				car.sensor.valMax = car.sensor.array[iCamera];			
 				} 	
 			}	
-			cameraTaskState=0;
-			iCamera += 1;
-			if(iCamera >127)
-				taskUpdateCameraEnd();	
+		cameraTaskState=0;
+		iCamera += 1;
+		if(iCamera >127)
+			taskUpdateCameraEnd();	
 	}
 	else
 	{
@@ -108,6 +108,7 @@ void taskUpdateCameraEnd(void)
 {
 	U8 i;
 	U32 avgSum = 0;
+	S16 derive = 0;
 	
 	PIT.CH[2].TCTRL.B.TEN = 0;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
 	
@@ -135,6 +136,29 @@ void taskUpdateCameraEnd(void)
 	
 	car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)/2;
 
+	
+	car.sensor.deriveValMax = -30000;
+	car.sensor.deriveValMin = 30000;
+	car.sensor.deriveCornLeft = 0;
+	car.sensor.deriveCornRight = 127;
+	//averaging Method
+	for(i=1;i<126;i++)
+	{		
+		derive = (derive + (S16)car.sensor.array[i] - (S16)car.sensor.array[i-1])/2; //averaged derivative
+		car.sensor.arrayDerive[i] = derive;
+			
+		if(car.sensor.deriveValMin > car.sensor.arrayDerive[i]) //if a new min is found, latch it
+			{
+			car.sensor.deriveValMin = car.sensor.arrayDerive[i];
+			car.sensor.deriveCornLeft = i;								// set the mim pos
+			}
+		if(car.sensor.deriveValMax < car.sensor.arrayDerive[i])
+			{
+			car.sensor.deriveValMax = car.sensor.arrayDerive[i];
+			car.sensor.deriveCornRight = i;				
+			} 		
+	}
+	
 	//A tap delay to help average the center measured position
 	//car.sensor.center = (car.sensor.center * 4 + car.sensor.c1 * 3 + car.sensor.c2 * 2 + car.sensor.c3)/10;
 	
@@ -154,11 +178,7 @@ void taskUpdateCameraEnd(void)
 	else
 		car.sensor.valid = 0;
 
-	//averaging Method
-	for(i=0;i<64;i++)
-	{		
-		avgSum += car.sensor.array[i] - car.sensor.array[127-i];
-	}
+	
 
 
 

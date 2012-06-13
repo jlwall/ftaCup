@@ -4,7 +4,7 @@
 
 
 #define constBiasCenter 500
-#define constServoMax 300
+#define constServoMax 350
 #define constServoMiddle 1500
 
 void task_1msec(void);
@@ -52,14 +52,18 @@ struct CAR_CAL
 	U8  runTime;
 	U16  sensorMinDynRange;
 	S8  sensorMaxError;
+	U8 apexModError;
 	
 };
 
 struct LIGHT_SENSOR
 {
 	U16  array[128];
+	S16  arrayDerive[128];
 	U8	cornLeft;
 	U8	cornRight;
+	U8	deriveCornLeft;
+	U8	deriveCornRight;
 	U8 	width;
 	U8  center;
 	U8  c1;
@@ -70,6 +74,8 @@ struct LIGHT_SENSOR
 	U16  threshold;
 	U16  valMax;
 	U16  valMin;
+	S16  deriveValMax;
+	S16  deriveValMin;
 	
 	
 	

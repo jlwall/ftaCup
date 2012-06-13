@@ -190,18 +190,19 @@ int main(void)
 
 
 
-void task_1msec()
-{
-	
-}
-
 void task_2msec()
 {
  	U32 motLeft;
   	U32 motRight;
  
-	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 2 + car.ctrl.targetVelocity)/3;
+ 	//Smoothen the velocity command target from where the App set it
+	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 5 + car.ctrl.targetVelocity)/6;
+		
+	if(car.ctrl.velTarget > 900) //limit the applied velocity Target
+		car.ctrl.velTarget = 900;
+	
 
+	//Apply velocities to left and right based off bias
 	motLeft = ((U32)car.ctrl.velTarget * (U32)car.ctrl.biasVelocity)/constBiasCenter;
 	motRight = ((U32)car.ctrl.velTarget * (constBiasCenter*2-(U32)car.ctrl.biasVelocity))/constBiasCenter;
 
@@ -213,12 +214,15 @@ void task_2msec()
 
 void task_5msec()
 {
- 	if(car.ctrl.manualMode==2)	//auto pilot Mode
+ 	if(car.ctrl.manualMode==2)	//auto pilot Mode ==2
 	{
 	
+		if(car.sensor.valid==1) //sensor has a valid read
+		{
+	
 		//set the steering position, iTerm
-	if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
-		{					
+		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
+			{					
 			car.ctrl.iTerm += (float)car.ctrl.error * car.ctrl.iGain;
 			
 			//Limit the iTerm
@@ -226,39 +230,33 @@ void task_5msec()
 				car.ctrl.iTerm = cal.servGainIgainLimit;
 			else if(car.ctrl.iTerm < -cal.servGainIgainLimit)
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
-		}
+			}
 		
-		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
+			//apply the dTerm
+			car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
 		
-		
-		//set the position, P, and I term only here
-		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
-		
-		//set the position, P, and I term only here
-	//	car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain;
-		if(car.ctrl.targetServoPos<-constServoMax)
-			car.ctrl.targetServoPos = -constServoMax;
-		else if(car.ctrl.targetServoPos>constServoMax)
-			car.ctrl.targetServoPos = constServoMax;
 			
-			
-		if(car.sensor.valid==1) //sensor has a valid read
-		{
+			//set the position, P, and I term only here
+			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
 		
+			//limit servo position
+			if(car.ctrl.targetServoPos<-constServoMax)
+				car.ctrl.targetServoPos = -constServoMax;
+			else if(car.ctrl.targetServoPos>constServoMax)
+				car.ctrl.targetServoPos = constServoMax;
+			
+			//set the control center Apex seeking portion
+			car.ctrl.controlCenter = (U8)(64 + car.ctrl.targetServoPos * (S16)cal.apexModError / constServoMax);		
+			
 			
 			//set the target open loop velocity
-			if(car.ctrl.error < -cal.errorTol)
-				car.ctrl.targetVelocity = (U16)((U16)car.ctrl.speedGain + car.ctrl.error*cal.servGain);
-			else if(car.ctrl.error > cal.errorTol)
-				car.ctrl.targetVelocity = (U16)((U16)car.ctrl.speedGain - car.ctrl.error*cal.servGain);
-			else
-				car.ctrl.targetVelocity = (U16)car.ctrl.speedGain;
+			car.ctrl.targetVelocity = (U16)car.ctrl.speedGain;
 			
 
 			//aditional speed damping for turning events
-			if(car.ctrl.targetServoPos>15)
+			if(car.ctrl.targetServoPos>200)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
-			else if(car.ctrl.targetServoPos<-15)
+			else if(car.ctrl.targetServoPos<-200)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 
 			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos / 2;
@@ -295,12 +293,12 @@ void task_5msec()
 		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
 		
 		//set the position, P, and I term only here
-	//	car.ctrl.targetServoPos = (S16)car.ctrl.error*cal.servGain;
 		if(car.ctrl.targetServoPos<-constServoMax)
 			car.ctrl.targetServoPos = -constServoMax;
 		else if(car.ctrl.targetServoPos>constServoMax)
 			car.ctrl.targetServoPos = constServoMax;
 		
+	
 		
 		car.ctrl.controlCenter = 64;
 	
@@ -313,8 +311,7 @@ void task_5msec()
 	i++;
 	}
 	*/
-	//set the servo PWM,
-	EMIOS_0.CH[4].CBDR.R = constServoMiddle + car.ctrl.targetServoPos; 
+	vfnSet_Servo(car.ctrl.targetServoPos);
 	
 	taskCTR_5msec=0;
 }
@@ -468,33 +465,7 @@ void Delay(void)
   };
 }
 
-void Delaylong(void)
-{
-  for(dly=0;dly<20000;dly++)
-  {
-  	
-  };
-}
 
-void Delaylonglong(void)
-{
-  for(lly=0;lly<1;lly++) Delaylong();
-}
-
-void Delaycamera(void)
-{
-  for(lly=0;lly<40;lly++) Delay();
-}
-
-void Delaywait(void)
-{
-  for(lly=0;lly<500;lly++) Delaylong();
-}
-
-void Delayled(void)
-{
-  for(lly=0;lly<500;lly++) Delaylong();
-}
 
 
 void Pit1ISR(void) 
@@ -520,7 +491,6 @@ void SwIrq4ISR(void)
 	SWirq4Ctr++;		 		/* Increment interrupt counter */
 	
 	//task running
-	task_1msec();
 	if(taskCTR_2msec++>=2) task_2msec();
 	if(taskCTR_5msec++>=5) task_5msec();
 	if(taskCTR_10msec++>=10) task_10msec();	
