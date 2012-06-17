@@ -118,6 +118,7 @@ int main(void)
 
 	initMainHardware();
   
+  setupBiasTable(); // sets lookup for differental neutral map
 
 
   for (;;) {
@@ -573,6 +574,49 @@ void SwIrq4ISR(void)
   	INTC.SSCIR[4].R = 1;		/* Clear channel's flag */  
 }
 
+void setupBiasTable()
+{
+	S8 i = 41;
+	float res;
+	float rad;
+
+	
+	while(i<=81)
+	{
+	rad = (float)(i-40)*10;
+	res = -0.0007f*rad*rad - 0.1264f*rad + 493.18f;
+	car.adjust.biasVelTable[i] = res;
+	
+	
+	
+		i++;
+	}
+	
+	
+	i = 39;
+	while(i>0)
+	{
+	rad = -(float)(i-40)*10;
+	res = 1000 - -0.0007f*rad*rad - 0.1264f * rad + 493.18f;
+	car.adjust.biasVelTable[i] = (S16)res;
+	
+	
+	
+		i--;
+	}
+	
+	car.adjust.biasVelTable[40] = 500;
+}
+
+S16 lookupBiasVel(S16 pwmTarget)
+{
+	S8 index = (S8)((pwmTarget/10)+40);
+	
+	if(index>0) index = 0;
+	if(index>80) index = 80;
+	return car.adjust.biasVelTable[(U8)index];
+	
+}
 
 
 

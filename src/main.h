@@ -20,6 +20,7 @@ void taskPIDupdate(void);
 void Pit1ISR(void);
 void Pit2ISR(void);
 void SwIrq4ISR(void);
+void setupBiasTable(void);
 
 struct CAR_ADJUST
 {
@@ -28,6 +29,7 @@ struct CAR_ADJUST
 	float adjIgain;
 	float adjDgain;
 	float adjSpeedgain;
+	S16 biasVelTable[61];
 	
 };
 
