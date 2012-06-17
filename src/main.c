@@ -358,7 +358,7 @@ void task_5msec()
 void task_10msec()
 {	
 
-
+	taskUpdateCameraStart();
  	taskCTR_10msec=0;
 }
 
@@ -366,7 +366,6 @@ void task_10msec()
 void task_20msec()
 {
 
-		taskUpdateCameraStart();
 
 	taskCTR_20msec=0;
 }

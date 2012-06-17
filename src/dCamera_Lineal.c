@@ -52,14 +52,14 @@ void taskUpdateCamera(void)
 			
 		if(car.sensor.teachDone>0)
 		{
-			car.sensor.array[iCamera] = (U16)(ADC.CDR[0].B.CDATA ) * 256 / car.sensor.arrayTeach[iCamera];
+			car.sensor.array[iCamera] = (U16)(((ADC.CDR[0].B.CDATA ) * 512) / car.sensor.arrayTeach[iCamera]);
 		}
 		else		
 		{		
 			car.sensor.array[iCamera] = (U16)(ADC.CDR[0].B.CDATA );// + (U16)(iCamera-64)/2;
 		}
 
-		if((iCamera>2) & iCamera < 126)  //if we are in edgeless zone, lets find the min and max,
+		if((iCamera>5) & iCamera < 123)  //if we are in edgeless zone, lets find the min and max,
 			{	
 			if(car.sensor.valMin > car.sensor.array[iCamera]) //if a new min is found, latch it
 				{
