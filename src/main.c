@@ -66,7 +66,7 @@ const struct CAR_CAL cal =
 	20,
 	0.65, 
 	
-	50, 
+	250, 
 	
 	4,
 	370,
@@ -210,7 +210,7 @@ void task_2msec()
   	U32 motRight;
  
  	//Smoothen the velocity command target from where the App set it
-	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 5 + car.ctrl.targetVelocity)/6;
+	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 7 + car.ctrl.targetVelocity)>>3;
 		
 	if(car.ctrl.velTarget > 900) //limit the applied velocity Target
 		car.ctrl.velTarget = 900;
@@ -229,12 +229,9 @@ void task_2msec()
 void taskPIDupdate()
 {	
 	if(car.ctrl.manualMode==2)	//auto pilot Mode ==2
-	{
-	
-	
-	
+	{	
 		//set the steering position, iTerm
-		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
+		if((car.ctrl.error > (cal.errorTol/2)) || (car.ctrl.error < -(cal.errorTol/2)))
 			{					
 			car.ctrl.iTerm += (float)car.ctrl.error * car.ctrl.iGain;
 			
@@ -246,11 +243,12 @@ void taskPIDupdate()
 			}
 		
 			//apply the dTerm
-			car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
+			//car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
 		
 			
 			//set the position, P, and I term only here
-			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
+			//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
+			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain);
 		
 			//limit servo position
 			if(car.ctrl.targetServoPos<-constServoMax)
@@ -259,16 +257,16 @@ void taskPIDupdate()
 				car.ctrl.targetServoPos = constServoMax;
 			
 			//straightLearning
-			if((car.ctrl.targetServoPos<-40) && car.ctrl.targetServoPos>40)
+			if((car.ctrl.targetServoPos > -40) && car.ctrl.targetServoPos < 40) //if steering is somewhat straight
 			{
-			if(car.ctrl.straightLearn<100)
+			if(car.ctrl.straightLearn<100) //can learn +100 in 1 second
 				car.ctrl.straightLearn += 1;
 			else
 				car.ctrl.straightLearn = 100;	
 			}
 			else
 			{
-				if(car.ctrl.straightLearn >9)
+				if(car.ctrl.straightLearn >9) // can learn down to null in 0.11 seconds
 				{
 					
 					car.ctrl.straightLearn -= 9;
@@ -290,10 +288,10 @@ void taskPIDupdate()
 			
 
 			//aditional speed damping for turning events
-			if(car.ctrl.targetServoPos>200)
-				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
-			else if(car.ctrl.targetServoPos<-200)
-				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
+			if(car.ctrl.targetServoPos>100)
+				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 3 / 5;
+			else if(car.ctrl.targetServoPos<-100)
+				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 3 / 5;
 
 			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );
 		}
@@ -311,8 +309,8 @@ void taskPIDupdate()
 		car.ctrl.biasVelocity = constBiasCenter;	
 		
 		
-		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
-		{					
+		if((car.ctrl.error > (cal.errorTol/2)) || (car.ctrl.error < -(cal.errorTol/2)))
+		{						
 			car.ctrl.iTerm += (float)car.ctrl.error * car.ctrl.iGain;
 			
 			//Limit the iTerm
@@ -322,7 +320,7 @@ void taskPIDupdate()
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
 		}
 		
-		car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
+		//car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
 		
 		
 		//set the position, P, and I term only here

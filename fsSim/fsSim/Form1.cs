@@ -533,15 +533,15 @@ namespace fsSim
                     if (Math.Abs(car.ctrl.servoPWMTarget) < 30)
                     {
                         if (car.ctrl.straightLearn < 100)
-                            car.ctrl.straightLearn += 3;
+                            car.ctrl.straightLearn += 1;
                         else
                             car.ctrl.straightLearn = 100;
                     }
                     else
                         
                     {
-                        if (car.ctrl.straightLearn > 8)
-                            car.ctrl.straightLearn -= 8;
+                        if (car.ctrl.straightLearn > 10)
+                            car.ctrl.straightLearn -= 10;
                         else
                             car.ctrl.straightLearn = 0;
                     }
@@ -574,7 +574,7 @@ namespace fsSim
                     if (maxV < car.cal.maxSpeed)
                         car.ctrl.velTarget = (UInt16)maxV;
                     else
-                        car.ctrl.velTarget = (UInt16)(car.cal.maxSpeed + (car.ctrl.straightLearn * 20));
+                        car.ctrl.velTarget = (UInt16)(car.cal.maxSpeed + (car.ctrl.straightLearn * 4));
 
                 }
                 else if (Math.Abs(car.ctrl.error) < 50)
