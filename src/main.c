@@ -115,6 +115,7 @@ int main(void)
 		car.ctrl.iGain =  cal.servGainIgain + car.adjust.adjIgain;
 		car.ctrl.dGain =  cal.servGainDTerm + car.adjust.adjDgain;
 		car.ctrl.speedGain =  cal.maxSpeed + car.adjust.adjSpeedgain;
+		car.ctrl.straightLearn = 0;
 
 	initMainHardware();
   
@@ -257,6 +258,26 @@ void taskPIDupdate()
 			else if(car.ctrl.targetServoPos>constServoMax)
 				car.ctrl.targetServoPos = constServoMax;
 			
+			//straightLearning
+			if((car.ctrl.targetServoPos<-40) && car.ctrl.targetServoPos>40)
+			{
+			if(car.ctrl.straightLearn<100)
+				car.ctrl.straightLearn += 1;
+			else
+				car.ctrl.straightLearn = 100;	
+			}
+			else
+			{
+				if(car.ctrl.straightLearn >9)
+				{
+					
+					car.ctrl.straightLearn -= 9;
+				}
+				else
+					car.ctrl.straightLearn = 0;
+			}
+			
+			
 			//set the control center Apex seeking portion
 			car.ctrl.controlCenter = (U8)(64 + car.ctrl.targetServoPos * (S16)cal.apexModError / constServoMax);		
 			//car.ctrl.controlCenter = 64;
@@ -265,7 +286,7 @@ void taskPIDupdate()
 		{
 			
 			//set the target open loop velocity
-			car.ctrl.targetVelocity = (U16)car.ctrl.speedGain;
+			car.ctrl.targetVelocity = (U16)car.ctrl.speedGain + (U16)car.ctrl.straightLearn;
 			
 
 			//aditional speed damping for turning events

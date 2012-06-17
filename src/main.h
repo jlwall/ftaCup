@@ -30,7 +30,7 @@ struct CAR_ADJUST
 	float adjIgain;
 	float adjDgain;
 	float adjSpeedgain;
-	S16 biasVelTable[61];
+	S16 biasVelTable[81]; //40 is neutral
 	
 };
 
@@ -114,6 +114,7 @@ S16 errorRate;
 S16 servoDegTarget;
 U16 velTarget;
 S16 error;
+U8 straightLearn;
 U8 autoTimer;
 U8 manualMode;
 

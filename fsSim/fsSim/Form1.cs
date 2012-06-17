@@ -37,7 +37,7 @@ namespace fsSim
             public bool turnRight;
 
             public byte ctrlMode;
-            
+            public UInt16 straightLearn;
         }
 
         class carSensor
@@ -486,7 +486,7 @@ namespace fsSim
             if (car.servoDeg < -65) car.servoDeg = -65;
 
             //process Speed
-            car.vel += (car.ctrl.velTarget - car.vel) / 450;
+            car.vel += (car.ctrl.velTarget - car.vel) / 150;
 
 
             if (car.ctrl.servoPWMTarget > 20)
@@ -513,7 +513,7 @@ namespace fsSim
 
                     car.ctrl.error = (Int16)(car.ctrl.centerTarget - car.ctrl.center);
 
-                    if ((Math.Abs(car.ctrl.error) > car.cal.errorTol * 2))
+                    if ((Math.Abs(car.ctrl.error) > car.cal.errorTol / 2))
                         car.ctrl.iTerm += car.ctrl.error * car.cal.servGainIgain;
 
                     if (car.ctrl.iTerm > 300) car.ctrl.iTerm = 300;
@@ -528,6 +528,24 @@ namespace fsSim
                         car.ctrl.servoPWMTarget = 300;
                     if (car.ctrl.servoPWMTarget < -300)
                         car.ctrl.servoPWMTarget = -300;
+
+
+                    if (Math.Abs(car.ctrl.servoPWMTarget) < 30)
+                    {
+                        if (car.ctrl.straightLearn < 100)
+                            car.ctrl.straightLearn += 3;
+                        else
+                            car.ctrl.straightLearn = 100;
+                    }
+                    else
+                        
+                    {
+                        if (car.ctrl.straightLearn > 8)
+                            car.ctrl.straightLearn -= 8;
+                        else
+                            car.ctrl.straightLearn = 0;
+                    }
+
 
                 car.ctrl.servoDegTarget = (Int16)((float)car.ctrl.servoPWMTarget / 695.5033146f * 90.0f);
 
@@ -545,6 +563,8 @@ namespace fsSim
                 if (car.ctrl.servoDegTarget < -70) 
                     car.ctrl.servoDegTarget = -70;
 
+
+        
             }
 
 
@@ -554,7 +574,7 @@ namespace fsSim
                     if (maxV < car.cal.maxSpeed)
                         car.ctrl.velTarget = (UInt16)maxV;
                     else
-                        car.ctrl.velTarget = (UInt16)car.cal.maxSpeed;
+                        car.ctrl.velTarget = (UInt16)(car.cal.maxSpeed + (car.ctrl.straightLearn * 20));
 
                 }
                 else if (Math.Abs(car.ctrl.error) < 50)
@@ -608,7 +628,7 @@ namespace fsSim
 
 
             car.lightSense.posX = 200;
-            car.lightSense.width = 80;
+            car.lightSense.width = 120;
 
             car.ctrl = new carControl();
             car.ctrl.center = 64;
@@ -619,6 +639,8 @@ namespace fsSim
             car.cal.servGain = 1.7f;
             car.cal.servGainIgain = 2.0f;
             car.cal.errorTol = 3;
+
+            car.ctrl.straightLearn = 0;
 
             try { car.cal.servGain = Convert.ToSingle(txtGainServo.Text); }
             catch (Exception ee)
