@@ -46,14 +46,14 @@ EMIOS_0.MCR.B.GPRE= 63;   			/* Divide 64 MHz sysclk by 63+1 = 64 for 1MHz eMIOS
 	EMIOS_0.MCR.B.GTBE = 1;  			/* Enable global time base */
 	EMIOS_0.MCR.B.FRZ = 1;    			/* Enable stopping channels when in debug mode */
 
-EMIOS_0.CH[0].CADR.R = 14999;   	/* Period will be 19999+1 = 20000 clocks (20 msec)*/
+	EMIOS_0.CH[0].CADR.R = 14999;   	/* Period will be 19999+1 = 20000 clocks (20 msec)*/
 	EMIOS_0.CH[0].CCR.B.MODE = 0x50; 	/* Modulus Counter Buffered (MCB) */
 	EMIOS_0.CH[0].CCR.B.BSL = 0x3;   	/* Use internal counter */
 	EMIOS_0.CH[0].CCR.B.UCPRE=0;     	/* Set channel prescaler to divide by 1 */
 	EMIOS_0.CH[0].CCR.B.UCPEN = 1;   	/* Enable prescaler; uses default divide by 1*/
 	EMIOS_0.CH[0].CCR.B.FREN = 1;   	/* Freeze channel counting when in debug mode*/
 
-EMIOS_0.CH[23].CADR.R = 999;      	/* Period will be 999+1 = 1000 clocks (1 msec)*/
+	EMIOS_0.CH[23].CADR.R = 999;      	/* Period will be 999+1 = 1000 clocks (1 msec)*/
 	EMIOS_0.CH[23].CCR.B.MODE = 0x50; 	/* Modulus Counter Buffered (MCB) */
 	EMIOS_0.CH[23].CCR.B.BSL = 0x3;   	/* Use internal counter */
 	EMIOS_0.CH[23].CCR.B.UCPRE=0;     	/* Set channel prescaler to divide by 1 */

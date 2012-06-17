@@ -118,6 +118,9 @@ U8 straightLearn;
 U8 autoTimer;
 U8 manualMode;
 
+U16 motorCurrentLeft;
+U16 motorCurrentRight;
+
 	U8  controlCenter;
 } ;
 
