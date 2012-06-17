@@ -16,7 +16,7 @@ extern const vuint32_t IntcIsrVectorTable[];
 
 void initMainHardware(void)
 {	
-U16 temp;
+//U16 temp;
 	disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 
 
@@ -27,7 +27,7 @@ U16 temp;
 		initPads ();
 	disableWatchdog();
 	init_LinFLEX_0_UART ();
-	initCAN_1();             /* Initialize FLEXCAN 0*/
+	//initCAN_1();             /* Initialize FLEXCAN 0*/
 	
 		initADC();
 
@@ -95,49 +95,49 @@ EMIOS_0.CH[23].CADR.R = 999;      	/* Period will be 999+1 = 1000 clocks (1 msec
 	
 	
 	//init SBC for CAN
-	DSPI_1.MCR.R = 0x80010001; /* Configure DSPI_0 as master */
-DSPI_1.CTAR[0].R = 0x780A7727; /* Configure CTAR0 */
-DSPI_1.MCR.B.HALT = 0x0; /* Exit HALT mode: go from STOPPED to RUNNING state*/
+	//DSPI_1.MCR.R = 0x80010001; /* Configure DSPI_0 as master */
+//DSPI_1.CTAR[0].R = 0x780A7727; /* Configure CTAR0 */
+//DSPI_1.MCR.B.HALT = 0x0; /* Exit HALT mode: go from STOPPED to RUNNING state*/
 
 
-DSPI_1.PUSHR.R = 0x08011D00; /* Transmit data from master to slave SPI with EOQ */
-while(DSPI_1.SR.B.EOQF==0)
-{
+//DSPI_1.PUSHR.R = 0x08011D00; /* Transmit data from master to slave SPI with EOQ */
+//while(DSPI_1.SR.B.EOQF==0)
+//{
 	
-};
-DSPI_1.SR.B.EOQF=1;
+//};
+//DSPI_1.SR.B.EOQF=1;
 
 
-temp = (U16)DSPI_1.POPR.R;
+//temp = (U16)DSPI_1.POPR.R;
 
 
 
-DSPI_1.PUSHR.R = 0x080160C1; /* Transmit data from master to slave SPI with EOQ */
-while(DSPI_1.SR.B.EOQF==0)
-{
+//DSPI_1.PUSHR.R = 0x080160C1; /* Transmit data from master to slave SPI with EOQ */
+//while(DSPI_1.SR.B.EOQF==0)
+//{
 	
-};
-DSPI_1.SR.B.EOQF=1;
+//};
+//DSPI_1.SR.B.EOQF=1;
 
 
 
-DSPI_1.PUSHR.R = 0x080140C0; /* Transmit data from master to slave SPI with EOQ */
-while(DSPI_1.SR.B.EOQF==0)
-{
+//DSPI_1.PUSHR.R = 0x080140C0; /* Transmit data from master to slave SPI with EOQ */
+//while(DSPI_1.SR.B.EOQF==0)
+//{
 	
-};
-DSPI_1.SR.B.EOQF=1;
+//};
+//DSPI_1.SR.B.EOQF=1;
 
 
-temp = (U16)DSPI_1.POPR.R;
+//temp = (U16)DSPI_1.POPR.R;
 
 
-DSPI_1.PUSHR.R = 0x08015E18; /* Transmit data from master to slave SPI with EOQ */
-while(DSPI_1.SR.B.EOQF==0)
-{
+//DSPI_1.PUSHR.R = 0x08015E18; /* Transmit data from master to slave SPI with EOQ */
+//while(DSPI_1.SR.B.EOQF==0)
+//{
 	
-};
-DSPI_1.SR.B.EOQF=1;
+//};
+//DSPI_1.SR.B.EOQF=1;
 	
 	
 INTC.CPR.B.PRI = 0;          /* Single Core: Lower INTC's current priority */
@@ -150,10 +150,10 @@ void initPads (void)
 	SIU.PCR[2].R = 0x0503;           	/* MPC56xxB: Initialize PA[2] as eMIOS[2] input */
 	SIU.PCR[3].R = 0x0600;           	/* MPC56xxB: Initialize PA[3] as eMIOS[3] output */
 	SIU.PCR[20].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
-	SIU.PCR[21].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
-	SIU.PCR[22].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
-	SIU.PCR[23].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP0 */
-	SIU.PCR[48].B.APC = 1;          	/* MPC56xxB: Initialize PF[0] as ANP0 */
+	SIU.PCR[21].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP1 */
+	SIU.PCR[22].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP2 */
+	SIU.PCR[23].B.APC = 1;          	/* MPC56xxB: Initialize PB[8] as ANP3 */
+	SIU.PCR[48].B.APC = 1;          	/* MPC56xxB: Initialize PF[0] as ANP4 */
 	
 	
 	//LED OUTS
@@ -177,9 +177,9 @@ void initPads (void)
 	SIU.PCR[28].R = 0x0600;           	/* MPC56xxB: Initialize PB[12] as eMIOS[4] output */
 	
 	SIU.PCR[113].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 SOUT output */
-SIU.PCR[112].R = 0x0903; /* MPC56xxP: Config pad as DSPI_0 SIN input */
-SIU.PCR[114].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 SCK output */
-SIU.PCR[115].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 PCS0 output */
+	SIU.PCR[112].R = 0x0903; /* MPC56xxP: Config pad as DSPI_0 SIN input */
+	SIU.PCR[114].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 SCK output */
+	SIU.PCR[115].R = 0x0A04; /* MPC56xxP: Config pad as DSPI_0 PCS0 output */
 }
 
 void initADC(void) {
@@ -211,10 +211,10 @@ void initModesAndClock(void) {
 	
 	ME.RUNPC[1].R = 0x00000010;     	/* Peri. Cfg. 1 settings: only run in RUN0 mode */
 	//ME.PCTL[4].R = 0x01; /* MPC56xxB/P/S DSPI0: select ME.RUNPC[1] */
-	ME.PCTL[5].R = 0x01; /* MPC56xxB/P/S DSPI1: select ME.RUNPC[1] */
+	//ME.PCTL[5].R = 0x01; /* MPC56xxB/P/S DSPI1: select ME.RUNPC[1] */
 	//ME.PCTL[16].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
-	ME.PCTL[17].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
-	ME.PCTL[32].R = 0x01;       		/* MPC56xxB ADC 0: select ME.RUNPC[1] */
+	//ME.PCTL[17].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
+	//ME.PCTL[32].R = 0x01;       		/* MPC56xxB ADC 0: select ME.RUNPC[1] */
   	ME.PCTL[57].R = 0x01;       		/* MPC56xxB CTUL: select ME.RUNPC[1] */
   	ME.PCTL[48].R = 0x01;           	/* MPC56xxB/P/S LINFlex 0: select ME.RUNPC[1] */
 	ME.PCTL[68].R = 0x01;           	/* MPC56xxB/S SIUL:  select ME.RUNPC[1] */
