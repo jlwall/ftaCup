@@ -274,12 +274,12 @@ void taskPIDupdate()
 			else if(car.ctrl.targetServoPos<-200)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 
-			car.ctrl.biasVelocity	= constBiasCenter - car.ctrl.targetServoPos / 2;
+			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );
 		}
 		else
 		{
 			car.ctrl.targetVelocity = cal.lostSpeed;			
-			car.ctrl.biasVelocity	= constBiasCenter - car.ctrl.targetServoPos / 2;	
+			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );	
 		}		
 		
 	}
