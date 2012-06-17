@@ -15,6 +15,7 @@ void task_40msec(void);
 void task_100msec(void);
 void task_500msec(void);
 void task_1000msec(void);
+void taskPIDupdate(void);
 
 void Pit1ISR(void);
 void Pit2ISR(void);
@@ -49,6 +50,9 @@ struct CAR_CAL
 	
 	U8  senseWidthMin;
 	U8  senseWidthMax;
+	U8  senseWidthMinDer;
+	U8  senseWidthMaxDer;
+	
 	U8  runTime;
 	U16  sensorMinDynRange;
 	S8  sensorMaxError;
@@ -59,12 +63,15 @@ struct CAR_CAL
 struct LIGHT_SENSOR
 {
 	U16  array[128];
-	S16  arrayDerive[128];
+	U16  arrayTeach[128];
+	
+	S8  arrayDerive[128];
 	U8	cornLeft;
 	U8	cornRight;
 	U8	deriveCornLeft;
 	U8	deriveCornRight;
 	U8 	width;
+	U8 	deriveWidth;
 	U8  center;
 	U8  c1;
 	U8  c2;
@@ -74,8 +81,14 @@ struct LIGHT_SENSOR
 	U16  threshold;
 	U16  valMax;
 	U16  valMin;
-	S16  deriveValMax;
-	S16  deriveValMin;
+	S8  deriveValMax;
+	S8  deriveValMin;
+	U8 teachDone;
+	
+	U8  TeachSenseWidthMin;
+	U8  TeachSenseWidthMax;
+	U16  TeachSensorMinDynRange;
+	
 	
 	
 	

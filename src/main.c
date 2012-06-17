@@ -47,14 +47,17 @@ const struct CAR_CAL cal =
 	
 	U8  senseWidthMin;
 	U8  senseWidthMax;
+	U8  senseWidthMinDer;
+	U8  senseWidthMaxDer;
 	U8  runTime;
 	
 	U8  sensorMinDynRange;
 	S8  sensorMaxError;
+	U8 apexModError
 */
-	7.2,
+	7.1,
 	0.2,
-	4.2,
+	0.0,
 	
 	190,
 	270,
@@ -63,17 +66,19 @@ const struct CAR_CAL cal =
 	20,
 	0.65, 
 	
-	200, 
-	
-	1,
-	650,
-	220,
+	50, 
 	
 	4,
-	60,
+	370,
+	200,
+	
+	5,
+	20,
+	7,
+	21,
 	60,
 	
-	20,60
+	40,50,0
 };
 
 
@@ -97,6 +102,13 @@ int main(void)
 	car.adjust.adjIgain = 0;
 	car.adjust.adjDgain = 0;
 	car.adjust.adjSpeedgain = 0;
+	car.sensor.teachDone=0;
+	
+	car.sensor.TeachSensorMinDynRange = cal.sensorMinDynRange;
+	car.sensor.TeachSenseWidthMin = cal.senseWidthMin;
+	car.sensor.TeachSenseWidthMax = cal.senseWidthMax;
+	
+	
 	
 		//Set the active Gains
 		car.ctrl.pGain =  cal.servGain + car.adjust.adjPgain;
@@ -212,13 +224,12 @@ void task_2msec()
 	taskCTR_2msec=0;
 }
 
-void task_5msec()
-{
- 	if(car.ctrl.manualMode==2)	//auto pilot Mode ==2
+void taskPIDupdate()
+{	
+	if(car.ctrl.manualMode==2)	//auto pilot Mode ==2
 	{
 	
-		if(car.sensor.valid==1) //sensor has a valid read
-		{
+	
 	
 		//set the steering position, iTerm
 		if((car.ctrl.error>cal.errorTol) || (car.ctrl.error < -cal.errorTol))
@@ -247,7 +258,10 @@ void task_5msec()
 			
 			//set the control center Apex seeking portion
 			car.ctrl.controlCenter = (U8)(64 + car.ctrl.targetServoPos * (S16)cal.apexModError / constServoMax);		
-			
+			//car.ctrl.controlCenter = 64;
+	
+		if(car.sensor.valid >=1) //sensor has a valid read
+		{
 			
 			//set the target open loop velocity
 			car.ctrl.targetVelocity = (U16)car.ctrl.speedGain;
@@ -259,12 +273,12 @@ void task_5msec()
 			else if(car.ctrl.targetServoPos<-200)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 
-			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos / 2;
+			car.ctrl.biasVelocity	= constBiasCenter - car.ctrl.targetServoPos / 2;
 		}
 		else
 		{
 			car.ctrl.targetVelocity = cal.lostSpeed;			
-			car.ctrl.biasVelocity	= constBiasCenter + car.ctrl.targetServoPos / 2;	
+			car.ctrl.biasVelocity	= constBiasCenter - car.ctrl.targetServoPos / 2;	
 		}		
 		
 	}
@@ -291,6 +305,7 @@ void task_5msec()
 		
 		//set the position, P, and I term only here
 		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
+		//car.ctrl.targetServoPos = (S16)(float)car.ctrl.error*car.ctrl.pGain;
 		
 		//set the position, P, and I term only here
 		if(car.ctrl.targetServoPos<-constServoMax)
@@ -310,24 +325,28 @@ void task_5msec()
 	TransmitMsgRef((U8*)&car.sensor.array[i*8],8,8+i,0x400+i);
 	i++;
 	}
-	*/
-	vfnSet_Servo(car.ctrl.targetServoPos);
-	
+	*/		   
+}
+
+void task_5msec()
+{
+ 	vfnSet_Servo(car.ctrl.targetServoPos);
+ 	
 	taskCTR_5msec=0;
 }
 
 void task_10msec()
-{
- 	taskUpdateCameraStart();	
+{	
+
+
  	taskCTR_10msec=0;
 }
 
 
 void task_20msec()
 {
-	//setup Capturing update of new Line
-	//u8Capture_Pixel_Values();
-	
+
+		taskUpdateCameraStart();
 
 	taskCTR_20msec=0;
 }
@@ -357,31 +376,79 @@ U16 tempADC;
 	{
 	
 			//ADC pot
-			ADC.NCMR[0].R = 0x00000002;      	/* Select ANP1:2 inputs for normal conversion */
+			ADC.NCMR[0].R = 0x00000010;      	/* Select ANS8:2 inputs for normal conversion */
 			ADC.MCR.B.NSTART = 1;   	
 			while(	ADC.MCR.B.NSTART ==1)
 			{			
 			};
-			tempADC = (U16)(ADC.CDR[1].B.CDATA);
+			tempADC = (U16)(ADC.CDR[4].B.CDATA);
 			ADC.NCMR[0].R = 0x00000001;      	/* Select ANP1:2 inputs for normal conversion */
 		
 			if(SIU.GPDI[102].R== 0x01) // P gain Mod
 			{	
-			car.adjust.adjPgain = ((float)tempADC - 512) * cal.servGain;
+			car.adjust.adjPgain = ((float)tempADC - 512) * cal.servGain / 512;
+				car.ctrl.pGain =  cal.servGain + car.adjust.adjPgain;
 			}
 			else if(SIU.GPDI[103].R== 0x01) // P gain Mod
 			{	
-			car.adjust.adjIgain = ((float)tempADC - 512) * cal.servGainIgain;
+			car.adjust.adjIgain = ((float)tempADC - 512) * cal.servGainIgain / 512;
+				car.ctrl.iGain =  cal.servGainIgain + car.adjust.adjIgain;
 			}
 			else if(SIU.GPDI[104].R== 0x01) // P gain Mod
 			{	
-			car.adjust.adjDgain = ((float)tempADC - 512) * cal.servGainDTerm;
+			car.adjust.adjDgain = ((float)tempADC - 512) * cal.servGainDTerm / 512;
+			
+		car.ctrl.dGain =  cal.servGainDTerm + car.adjust.adjDgain;
 			}
 			else if(SIU.GPDI[105].R== 0x01) // P gain Mod
 			{	
-			car.adjust.adjSpeedgain = ((float)tempADC - 512) * cal.maxSpeed;
+			car.adjust.adjSpeedgain = ((float)tempADC - 512) * cal.maxSpeed / 512;			
+		car.ctrl.speedGain =  cal.maxSpeed + car.adjust.adjSpeedgain;
 			}
 		
+	
+		if(tempADC<0x1E0)
+		{
+			SIU.GPDO[68].R = 0;
+			SIU.GPDO[69].R = 0;
+			SIU.GPDO[70].R = 0;
+			SIU.GPDO[71].R = 0;
+			if(tempADC<0x140)
+				SIU.GPDO[71].R = 1;
+			if(tempADC<0x100)
+				SIU.GPDO[70].R = 1;
+			if(tempADC<0x50)
+				SIU.GPDO[69].R = 1;
+			if(tempADC<0x10)
+				SIU.GPDO[68].R = 1;
+			
+		}
+		else if(tempADC>0x220)
+		{			
+		
+			SIU.GPDO[68].R = 0;
+			SIU.GPDO[69].R = 0;
+			SIU.GPDO[70].R = 0;
+			SIU.GPDO[71].R = 0;
+			if(tempADC>0x280)
+				SIU.GPDO[68].R = 1;
+			if(tempADC>0x300)
+				SIU.GPDO[69].R = 1;
+			if(tempADC>0x380)
+				SIU.GPDO[70].R = 1;
+			if(tempADC>0x3C0)
+				SIU.GPDO[71].R = 1;
+		}
+		else
+		
+		{
+				SIU.GPDO[68].R = 0;
+			SIU.GPDO[69].R = 1;
+			SIU.GPDO[70].R = 1;
+			SIU.GPDO[71].R = 0;
+		}
+		
+
 	
 	
 	
@@ -390,8 +457,10 @@ U16 tempADC;
 	{//use this leg for LED control of sensor Status
 	
 	
-	
-			SIU.GPDO[68].R = 1-car.sensor.valid;
+	if(car.sensor.valid>0)
+			SIU.GPDO[68].R = 0;
+	else
+	SIU.GPDO[68].R = 1;
 	if(car.ctrl.error<2 & car.ctrl.error>-2)
 		SIU.GPDO[69].R = 0;
 	else
@@ -402,7 +471,7 @@ U16 tempADC;
 	else
 		SIU.GPDO[70].R = 1;
 	
-	if(car.sensor.threshold>cal.sensorMinDynRange)
+	if(car.sensor.threshold > car.sensor.TeachSensorMinDynRange)
 		SIU.GPDO[71].R = 0;
 	else
 		SIU.GPDO[71].R = 1;
