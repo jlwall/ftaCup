@@ -55,20 +55,20 @@ const struct CAR_CAL cal =
 	S8  sensorMaxError;
 	U8 apexModError
 */
-	7.9,0.08,0.0,
+	6.3,0.04,0.8,
 	
 	190,270,
 	
 	25,	20,	0.65, 
 	
-	200, 
+	100, 
 	
-	4,	500,	280,
+	6,	700,	480,
 	
 	5,	30,
 	7,	21,
 	
-	15,20,60,0
+	35,20,60,2
 };
 
 
@@ -192,19 +192,19 @@ void taskPIDupdate()
 				car.ctrl.targetServoPos = constServoMax;
 			
 			//straightLearning
-			if((car.ctrl.targetServoPos > -40) && car.ctrl.targetServoPos < 40) //if steering is somewhat straight
+			if((car.ctrl.targetServoPos > -50) && car.ctrl.targetServoPos < 50) //if steering is somewhat straight
 			{
-			if(car.ctrl.straightLearn<100) //can learn +100 in 1 second
+			if(car.ctrl.straightLearn<200) //can learn +100 in 1 second
 				car.ctrl.straightLearn += 1;
 			else
-				car.ctrl.straightLearn = 100;	
+				car.ctrl.straightLearn = 200;	
 			}
 			else
 			{
-				if(car.ctrl.straightLearn >9) // can learn down to null in 0.11 seconds
+				if(car.ctrl.straightLearn >15) // can learn down to null in 0.11 seconds
 				{
 					
-					car.ctrl.straightLearn -= 9;
+					car.ctrl.straightLearn -= 15;
 				}
 				else
 					car.ctrl.straightLearn = 0;
@@ -219,14 +219,14 @@ void taskPIDupdate()
 		{
 			
 			//set the target open loop velocity
-			car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn/4;
+			car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn*2;
 			
 
 			//aditional speed damping for turning events
-			if(car.ctrl.targetServoPos>150)
-				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 3 / 5;
-			else if(car.ctrl.targetServoPos<-150)
-				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 3 / 5;
+			if(car.ctrl.targetServoPos>200)
+				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
+			else if(car.ctrl.targetServoPos<-200)
+				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 
 			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );
 		}
@@ -283,8 +283,8 @@ void task_5msec()
  	//Smoothen the velocity command target from where the App set it
 	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 7 + car.ctrl.targetVelocity)>>3;
 		
-	if(car.ctrl.velTarget > 700) //limit the applied velocity Target
-		car.ctrl.velTarget = 700;
+	if(car.ctrl.velTarget > 1400) //limit the applied velocity Target
+		car.ctrl.velTarget = 1400;
 	
 
 	//Apply velocities to left and right based off bias
@@ -314,8 +314,8 @@ void task_20msec()
 	{
 		if(car.logPacketIndex<logSamples)
 		{		
-		memcpy(&loger.packet[car.logPacketIndex],&car.ctrl.iTerm,24);
-		memcpy(&loger.packet[car.logPacketIndex].data[24],&car.sensor.threshold,16);
+		memcpy(&loger.packet[car.logPacketIndex],&car.ctrl.iTerm,21);
+		memcpy(&loger.packet[car.logPacketIndex].data[21],&car.sensor.threshold,11);
 		}
 		car.logPacketIndex += 1;
 	}
@@ -531,7 +531,7 @@ void setupBiasTable()
 	while(i<=81)
 	{
 	rad = (float)(i-40)*10;
-	res = -0.0007f*rad*rad - 0.1264f*rad + 493.18f;
+	res = -0.0007f*rad*rad - 0.1564f*rad + 493.18f;
 	car.adjust.biasVelTable[i] = res;
 	
 	
@@ -544,7 +544,7 @@ void setupBiasTable()
 	while(i>=0)
 	{
 	rad = -(float)(i-40)*10;
-	res = 1000-(-0.0007f*rad*rad - 0.1264f * rad + 493.18f);
+	res = 1000-(-0.0007f*rad*rad - 0.1564f * rad + 493.18f);
 	car.adjust.biasVelTable[i] = (S16)res;
 	
 	

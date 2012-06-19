@@ -298,7 +298,7 @@ void taskUpdateCameraEnd(void)
 		car.TeachSenseWidthMin = car.sensor.width-7;
 	car.TeachSenseWidthMax = car.sensor.width+7;
 	
-	car.TeachSensorMinDynRange = car.sensor.threshold * 9 / 16;
+	car.TeachSensorMinDynRange = car.sensor.threshold * 10 / 16;
 		car.sensor.teachDone = 11;
 		
 	}

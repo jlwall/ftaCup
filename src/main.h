@@ -93,7 +93,7 @@ S16 biasVelocity;
 S16 servoDegTarget;
 U16 velTarget;
 S16 error;
-U8 straightLearn;
+U16 straightLearn;
 S8 autoTimer;
 U8 manualMode;
 U8  controlCenter;
