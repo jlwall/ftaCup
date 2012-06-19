@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	7.0,0.018,0,
+	6.1,0.018,0,
 	
 	190,270,
 	
@@ -203,10 +203,10 @@ void taskPIDupdate()
 			}
 			else
 			{
-				if(car.ctrl.straightLearn >20) // can learn down to null in 0.11 seconds
+				if(car.ctrl.straightLearn >15) // can learn down to null in 0.11 seconds
 				{
 					
-					car.ctrl.straightLearn -= 20;
+					car.ctrl.straightLearn -= 15;
 				}
 				else
 					car.ctrl.straightLearn = 0;
@@ -230,12 +230,12 @@ void taskPIDupdate()
 			else if(car.ctrl.targetServoPos<-100)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 
-			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );
+			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos, car.ctrl.straightLearn );
 		}
 		else
 		{
 			car.ctrl.targetVelocity = cal.lostSpeed;			
-			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );	
+			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos,car.ctrl.straightLearn);	
 		}		
 		
 	}
@@ -536,7 +536,7 @@ void setupBiasTable()
 	while(i<=81)
 	{
 	rad = (float)(i-40)*10;
-	res = -0.0007f*rad*rad - 0.1564f*rad + 493.18f;
+	res = -0.0016f*rad*rad - 0.1564f*rad + 493.18f;
 	car.adjust.biasVelTable[i] = res;
 	
 	
@@ -549,7 +549,7 @@ void setupBiasTable()
 	while(i>=0)
 	{
 	rad = -(float)(i-40)*10;
-	res = 1000-(-0.0007f*rad*rad - 0.1564f * rad + 493.18f);
+	res = 1000-(-0.0016f*rad*rad - 0.1564f * rad + 493.18f);
 	car.adjust.biasVelTable[i] = (S16)res;
 	
 	
@@ -560,13 +560,24 @@ void setupBiasTable()
 	car.adjust.biasVelTable[40] = 500;
 }
 
-S16 lookupBiasVel(S16 pwmTarget)
+S16 lookupBiasVel(S16 pwmTarget, U16 speedlearn)
 {
+S16 ret = 0;
 	S8 index = (S8)((S8)(pwmTarget/10)+40);
 	
 	if(index<0) index = 0;
 	if(index>80) index = 80;
-	return car.adjust.biasVelTable[(U8)index];
+	ret = car.adjust.biasVelTable[(U8)index];
+	if(speedlearn>40)
+	{
+		if(index<40)
+			ret = ret*4/3;
+		
+		else if(index>40)
+			ret = ret*2/3;
+	}
+
+	return ret;
 	
 }
 

@@ -20,7 +20,7 @@ void Pit1ISR(void);
 void Pit2ISR(void);
 void SwIrq4ISR(void);
 void setupBiasTable(void);
-S16 lookupBiasVel(S16 steerTarget);
+S16 lookupBiasVel(S16 pwmTarget, U16 speedlearn);
 
 struct CAR_ADJUST
 {
