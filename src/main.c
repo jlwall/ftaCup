@@ -55,8 +55,9 @@ const struct CAR_CAL cal =
 	U8  sensorMinDynRange;
 	S8  sensorMaxError;
 	U8 apexModError
+		U16 maxLearn;
 */
-	7.1,0.022,0,
+	7.2,0.032,0,
 	
 	190,270,
 	
@@ -64,12 +65,12 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	650,	400,
+	4,	660,	400,
 	
 	5,	30,
 	7,	21,
 	
-	35,20,60,8
+	35,20,60,2,180
 };
 
 
@@ -195,10 +196,10 @@ void taskPIDupdate()
 			//straightLearning
 			if((car.ctrl.targetServoPos > -50) && car.ctrl.targetServoPos < 50) //if steering is somewhat straight
 			{
-			if(car.ctrl.straightLearn<120) //can learn +100 in 1 second
+			if(car.ctrl.straightLearn < cal.maxLearn ) //can learn +100 in 1 second
 				car.ctrl.straightLearn += 1;
 			else
-				car.ctrl.straightLearn = 120;	
+				car.ctrl.straightLearn = cal.maxLearn;	
 			}
 			else
 			{

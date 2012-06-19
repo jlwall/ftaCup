@@ -59,6 +59,7 @@ struct CAR_CAL
 	U16  sensorMinDynRange;
 	S8  sensorMaxError;
 	U8 apexModError;
+	U16 maxLearn;
 	
 };
 
