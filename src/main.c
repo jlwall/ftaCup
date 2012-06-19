@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	7.3,0.026,0,
+	7.0,0.018,0,
 	
 	190,270,
 	
@@ -65,7 +65,7 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	620,	400,
+	4,	660,	400,
 	
 	5,	30,
 	7,	21,
@@ -536,7 +536,7 @@ void setupBiasTable()
 	while(i<=81)
 	{
 	rad = (float)(i-40)*10;
-	res = -0.0008f*rad*rad - 0.1764f*rad + 493.18f;
+	res = -0.0007f*rad*rad - 0.1564f*rad + 493.18f;
 	car.adjust.biasVelTable[i] = res;
 	
 	
@@ -549,7 +549,7 @@ void setupBiasTable()
 	while(i>=0)
 	{
 	rad = -(float)(i-40)*10;
-	res = 1000-(-0.0008f*rad*rad - 0.1764f * rad + 493.18f);
+	res = 1000-(-0.0007f*rad*rad - 0.1564f * rad + 493.18f);
 	car.adjust.biasVelTable[i] = (S16)res;
 	
 	
