@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	7.2,0.026,2,
+	7.3,0.026,0,
 	
 	190,270,
 	
@@ -70,7 +70,7 @@ const struct CAR_CAL cal =
 	5,	30,
 	7,	21,
 	
-	35,20,60,2,180
+	35,20,60,2,140
 };
 
 
@@ -180,11 +180,11 @@ void taskPIDupdate()
 			}
 		
 			//apply the dTerm
-			car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
+		//	car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
 		
 			
 			//set the position, P, and I term only here
-			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm +car.ctrl.dterm);
+			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm);// +car.ctrl.dterm);
 			//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain);
 		
 			//limit servo position
@@ -536,7 +536,7 @@ void setupBiasTable()
 	while(i<=81)
 	{
 	rad = (float)(i-40)*10;
-	res = -0.0007f*rad*rad - 0.1564f*rad + 493.18f;
+	res = -0.0008f*rad*rad - 0.1764f*rad + 493.18f;
 	car.adjust.biasVelTable[i] = res;
 	
 	
@@ -549,7 +549,7 @@ void setupBiasTable()
 	while(i>=0)
 	{
 	rad = -(float)(i-40)*10;
-	res = 1000-(-0.0007f*rad*rad - 0.1564f * rad + 493.18f);
+	res = 1000-(-0.0008f*rad*rad - 0.1764f * rad + 493.18f);
 	car.adjust.biasVelTable[i] = (S16)res;
 	
 	
