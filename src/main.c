@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	6.1,0.018,0,
+	6.8,0.018,0.6,
 	
 	190,270,
 	
@@ -65,7 +65,7 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	660,	400,
+	4,	640,	400,
 	
 	5,	30,
 	7,	21,
@@ -179,12 +179,12 @@ void taskPIDupdate()
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
 			}
 		
-			//apply the dTerm
-		//	car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
+		
+		car.ctrl.dterm = (car.sensor.c2 - car.sensor.center) * car.dGain;
 		
 			
 			//set the position, P, and I term only here
-			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm);// +car.ctrl.dterm);
+			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm + car.ctrl.dterm);//+car.ctrl.dterm);
 			//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain);
 		
 			//limit servo position
@@ -194,7 +194,7 @@ void taskPIDupdate()
 				car.ctrl.targetServoPos = constServoMax;
 			
 			//straightLearning
-			if((car.ctrl.targetServoPos > -50) && car.ctrl.targetServoPos < 50) //if steering is somewhat straight
+			if((car.ctrl.targetServoPos > -20) && car.ctrl.targetServoPos < 20) //if steering is somewhat straight
 			{
 			if(car.ctrl.straightLearn < cal.maxLearn ) //can learn +100 in 1 second
 				car.ctrl.straightLearn += 1;
@@ -221,15 +221,15 @@ void taskPIDupdate()
 		{
 			
 			//set the target open loop velocity
-			car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn*2;
+			car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn*3;
 			
 
 			//aditional speed damping for turning events
-			if(car.ctrl.targetServoPos>100)
+		/*	if(car.ctrl.targetServoPos>100)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 			else if(car.ctrl.targetServoPos<-100)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
-
+*/
 			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos, car.ctrl.straightLearn );
 		}
 		else
@@ -286,15 +286,26 @@ void task_5msec()
   	U32 motRight;
  
  	//Smoothen the velocity command target from where the App set it
-	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 7 + car.ctrl.targetVelocity)>>3;
+	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 3 + car.ctrl.targetVelocity)>>2;
 		
 	if(car.ctrl.velTarget > 1400) //limit the applied velocity Target
 		car.ctrl.velTarget = 1400;
 	
 
 	//Apply velocities to left and right based off bias
-	motLeft = ((U32)car.ctrl.velTarget * (U32)car.ctrl.biasVelocity)/constBiasCenter;
+	if(car.ctrl.biasVelocity>500)
+	{
+		motLeft = ((U32)car.ctrl.velTarget * 500)/constBiasCenter;
 	motRight = ((U32)car.ctrl.velTarget * (constBiasCenter*2-(U32)car.ctrl.biasVelocity))/constBiasCenter;
+	
+	}
+	else
+	{
+		
+			motLeft = ((U32)car.ctrl.velTarget * (U32)car.ctrl.biasVelocity)/constBiasCenter;
+	motRight = ((U32)car.ctrl.velTarget * 500)/constBiasCenter;
+	
+	}
 
 	vfnSet_Duty_Opwm(6,motLeft);
 	vfnSet_Duty_Opwm(7,motRight);
