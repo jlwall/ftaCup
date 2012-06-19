@@ -7,7 +7,7 @@
 #define constServoMax 350
 #define constServoMiddle 1500
 
-#define logSamples 900
+#define logSamples 300
 
 void task_2msec(void);
 void task_5msec(void);

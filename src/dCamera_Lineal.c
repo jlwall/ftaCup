@@ -144,7 +144,7 @@ void taskUpdateCameraEnd(void)
 			{
 				if(car.sensor.array[i] > (car.sensor.threshold + car.sensor.valMin))
 				{
-				if(( (i - car.sensor.cornLeft) > car.TeachSenseWidthMin) && ((i - car.sensor.cornLeft) < car.TeachSenseWidthMax))	
+				if(( (i - car.sensor.cornLeft) >= car.TeachSenseWidthMin) && ((i - car.sensor.cornLeft) <= car.TeachSenseWidthMax))	
 					{				
 					car.sensor.cornRight = i;
 					car.sensor.width = car.sensor.cornRight - car.sensor.cornLeft;	
@@ -293,12 +293,12 @@ void taskUpdateCameraEnd(void)
 	else if(((SIU.PGPDI[2].R & 0x40000000) == 0x0000000) && car.sensor.teachDone==10) // button 2 pressed, teach line chars
 	{
 	if(car.sensor.width < 8)
-		car.TeachSenseWidthMin = car.sensor.width/2;
+		car.TeachSenseWidthMin = car.sensor.width/3;
 	else
 		car.TeachSenseWidthMin = car.sensor.width-7;
 	car.TeachSenseWidthMax = car.sensor.width+7;
 	
-	car.TeachSensorMinDynRange = car.sensor.threshold * 10 / 16;
+	car.TeachSensorMinDynRange = car.sensor.threshold * 7 / 16;
 		car.sensor.teachDone = 11;
 		
 	}

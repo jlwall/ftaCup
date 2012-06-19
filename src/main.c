@@ -15,6 +15,7 @@ float posp,posi,poserr,posd,last_poserr[10];
 
 float kp=0.2,kd=0.4,ki=0.05,p;
 
+S16 testServo = -350;
 
 U16 taskCTR_2msec = 0;
 U16 taskCTR_5msec = 0;
@@ -55,7 +56,7 @@ const struct CAR_CAL cal =
 	S8  sensorMaxError;
 	U8 apexModError
 */
-	6.3,0.04,0.8,
+	7.1,0.022,0,
 	
 	190,270,
 	
@@ -63,12 +64,12 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	6,	700,	480,
+	4,	650,	400,
 	
 	5,	30,
 	7,	21,
 	
-	35,20,60,2
+	35,20,60,8
 };
 
 
@@ -178,11 +179,11 @@ void taskPIDupdate()
 			}
 		
 			//apply the dTerm
-			car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
+		//	car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
 		
 			
 			//set the position, P, and I term only here
-			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm + car.ctrl.dterm);
+			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm );
 			//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain);
 		
 			//limit servo position
@@ -194,17 +195,17 @@ void taskPIDupdate()
 			//straightLearning
 			if((car.ctrl.targetServoPos > -50) && car.ctrl.targetServoPos < 50) //if steering is somewhat straight
 			{
-			if(car.ctrl.straightLearn<200) //can learn +100 in 1 second
+			if(car.ctrl.straightLearn<120) //can learn +100 in 1 second
 				car.ctrl.straightLearn += 1;
 			else
-				car.ctrl.straightLearn = 200;	
+				car.ctrl.straightLearn = 120;	
 			}
 			else
 			{
-				if(car.ctrl.straightLearn >15) // can learn down to null in 0.11 seconds
+				if(car.ctrl.straightLearn >20) // can learn down to null in 0.11 seconds
 				{
 					
-					car.ctrl.straightLearn -= 15;
+					car.ctrl.straightLearn -= 20;
 				}
 				else
 					car.ctrl.straightLearn = 0;
@@ -223,9 +224,9 @@ void taskPIDupdate()
 			
 
 			//aditional speed damping for turning events
-			if(car.ctrl.targetServoPos>200)
+			if(car.ctrl.targetServoPos>100)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
-			else if(car.ctrl.targetServoPos<-200)
+			else if(car.ctrl.targetServoPos<-100)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 4 / 5;
 
 			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );
@@ -260,6 +261,9 @@ void taskPIDupdate()
 		
 		//set the position, P, and I term only here
 		//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
+	//	if(testServo < 350)
+	//		car.ctrl.targetServoPos = testServo++;
+	//	else
 		car.ctrl.targetServoPos = (S16)(float)car.ctrl.error*car.pGain;
 		
 		//set the position, P, and I term only here
@@ -295,6 +299,7 @@ void task_5msec()
 	vfnSet_Duty_Opwm(7,motRight);
  	vfnSet_Servo(car.ctrl.targetServoPos);
  	
+
 	taskUpdateCameraStart();
  	
 	taskCTR_5msec=0;
@@ -302,7 +307,6 @@ void task_5msec()
 
 void task_10msec()
 {	
-
  	taskCTR_10msec=0;
 }
 
@@ -310,7 +314,7 @@ void task_10msec()
 void task_20msec()
 {
 
-	if(car.ctrl.manualMode == 2)
+/*	if(car.ctrl.manualMode == 2)
 	{
 		if(car.logPacketIndex<logSamples)
 		{		
@@ -318,7 +322,7 @@ void task_20msec()
 		memcpy(&loger.packet[car.logPacketIndex].data[21],&car.sensor.threshold,11);
 		}
 		car.logPacketIndex += 1;
-	}
+	}*/
 		
 	taskCTR_20msec=0;
 }
