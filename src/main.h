@@ -7,13 +7,12 @@
 #define constServoMax 350
 #define constServoMiddle 1500
 
-void task_1msec(void);
+#define logSamples 900
+
 void task_2msec(void);
 void task_5msec(void);
 void task_10msec(void);
 void task_40msec(void);
-void task_100msec(void);
-void task_500msec(void);
 void task_1000msec(void);
 void taskPIDupdate(void);
 
@@ -122,5 +121,5 @@ struct LogPacket
 
 struct LogStruct
 {
-	struct LogPacket packet[300];
+	struct LogPacket packet[logSamples];
 };

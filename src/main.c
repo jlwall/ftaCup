@@ -49,36 +49,26 @@ const struct CAR_CAL cal =
 	U8  senseWidthMax;
 	U8  senseWidthMinDer;
 	U8  senseWidthMaxDer;
-	U8  runTime;
 	
+	U8  runTime;	
 	U8  sensorMinDynRange;
 	S8  sensorMaxError;
 	U8 apexModError
 */
-	7.1,
-	0.2,
-	1.0,
+	7.1,0.2,1.0,
 	
-	190,
-	270,
+	190,270,
 	
-	25,
-	20,
-	0.65, 
+	25,	20,	0.65, 
 	
 	250, 
 	
-	4,
-	370,
-	200,
+	4,	370,	200,
 	
-	5,
-	30,
-	7,
-	21,
-	5,
+	5,	30,
+	7,	21,
 	
-	20,60,10
+	5,20,60,10
 };
 
 
@@ -321,7 +311,7 @@ void task_20msec()
 
 	if(car.ctrl.manualMode == 2)
 	{
-		if(car.logPacketIndex<300)
+		if(car.logPacketIndex<logSamples)
 		{		
 		memcpy(&loger.packet[car.logPacketIndex],&car.ctrl.iTerm,24);
 		memcpy(&loger.packet[car.logPacketIndex].data[24],&car.sensor.threshold,16);
