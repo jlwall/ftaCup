@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	7.2,0.032,0,
+	7.2,0.026,2,
 	
 	190,270,
 	
@@ -65,7 +65,7 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	660,	400,
+	4,	620,	400,
 	
 	5,	30,
 	7,	21,
@@ -180,11 +180,11 @@ void taskPIDupdate()
 			}
 		
 			//apply the dTerm
-		//	car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
+			car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
 		
 			
 			//set the position, P, and I term only here
-			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm );
+			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm +car.ctrl.dterm);
 			//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain);
 		
 			//limit servo position
