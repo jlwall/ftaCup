@@ -67,6 +67,9 @@ struct LIGHT_SENSOR
 {
 	U16  array[128];
 	U16  arrayTeach[128];
+	U16  threshold;
+	U16  valMax;
+	U16  valMin;
 	U8	cornLeft;
 	U8	cornRight;
 	U8 	width;
@@ -76,13 +79,9 @@ struct LIGHT_SENSOR
 	U8  c3;
 	U8  c4;
 	U8  valid;
-	U16  threshold;
-	U16  valMax;
-	U16  valMin;
 	U8 teachDone;
-	
-	
-}; //13 bytes to log
+		
+}; //16 bytes to log
 
 struct CAR_CTRL {
 float iTerm;
@@ -111,4 +110,15 @@ float speedGain;
 U8  TeachSenseWidthMin;
 U8  TeachSenseWidthMax;
 U16  TeachSensorMinDynRange;
+U16 logPacketIndex;
+};
+
+struct LogPacket
+{
+	U8 data[40];
+};
+
+struct LogStruct
+{
+	struct LogPacket packet[300];
 };

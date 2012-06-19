@@ -4,7 +4,7 @@
 #include "typedefs.h"
 #include "main.h"
 
-
+struct LogStruct loger;
 
 vuint32_t i,j;                					/* Dummy idle counter */
 
@@ -76,7 +76,7 @@ const struct CAR_CAL cal =
 	20,
 	7,
 	21,
-	60,
+	6,
 	
 	40,60,10
 };
@@ -366,7 +366,16 @@ void task_10msec()
 void task_20msec()
 {
 
-
+	if(car.ctrl.manualMode == 2)
+	{
+		if(car.logPacketIndex<300)
+		{		
+		memcpy(&loger.packet[car.logPacketIndex],&car.ctrl.iTerm,24);
+		memcpy(&loger.packet[car.logPacketIndex].data[24],&car.sensor.threshold,16);
+		}
+		car.logPacketIndex += 1;
+	}
+		
 	taskCTR_20msec=0;
 }
 
@@ -387,7 +396,11 @@ U16 tempADC;
 		car.speedGain =  cal.maxSpeed + car.adjust.adjSpeedgain;
 		 
 		car.ctrl.autoTimer = cal.runTime;
-		car.ctrl.manualMode = 2;		
+		car.ctrl.manualMode = 2;	
+		car.logPacketIndex = 0;	
+		loger.packet[0].data[0]=0;
+	//	if(loger.packet[499].data[39]==0)
+	//	loger.packet[499].data[39]=0xff;
 	}
 
 	//SWITCH 1 is on for Mod Mode
