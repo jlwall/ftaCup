@@ -50,7 +50,7 @@ void taskUpdateCamera(void)
 			{			
 			};
 			
-		if(car.sensor.teachDone>10)
+		if(car.sensor.teachDone>=10)
 		{
 			car.sensor.array[iCamera] = (U16)(((ADC.CDR[0].B.CDATA ) * 512) / car.sensor.arrayTeach[iCamera]);
 		}
@@ -121,38 +121,46 @@ void taskUpdateCameraEnd(void)
 	//disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 	car.sensor.valMin = car.sensor.valMinTemp;
 	car.sensor.valMax = car.sensor.valMaxTemp;
-	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)>>2;	
-	car.sensor.cornLeft = minPosCamera;
-	car.sensor.cornRight = minPosCamera;
+	car.sensor.threshold = (car.sensor.valMaxTemp - car.sensor.valMinTemp)>>2;	
+//	car.sensor.cornLeft = 0;
+//	car.sensor.cornRight = 127;
 	
-	i=2;
-	while(i<125)
+	if(car.sensor.threshold >= car.TeachSensorMinDynRange || car.sensor.teachDone==0)
 	{
-		if(modeFind==0)
+		
+	
+		i=2;
+		while(i<125)
 		{
-			if(car.sensor.array[i] < car.sensor.threshold)
+			if(modeFind==0)
 			{
-			car.sensor.cornLeft = i;
-			modeFind =1;	
-			}
-		}
-		else if(modeFind==1)
-		{
-			if(car.sensor.array[i] > car.sensor.threshold)
-			{
-			if(( (i - car.sensor.cornLeft) > car.TeachSenseWidthMin) && ((i - car.sensor.cornLeft) < car.TeachSenseWidthMax))	
-				{				
-				car.sensor.cornRight = i;
-				modeFind = 2;
+				if(car.sensor.array[i] < (car.sensor.threshold + car.sensor.valMin))
+				{
+				car.sensor.cornLeft = i;
+				modeFind =1;	
 				}
 			}
+			else if(modeFind==1)
+			{
+				if(car.sensor.array[i] > (car.sensor.threshold + car.sensor.valMin))
+				{
+				if(( (i - car.sensor.cornLeft) > car.TeachSenseWidthMin) && ((i - car.sensor.cornLeft) < car.TeachSenseWidthMax))	
+					{				
+					car.sensor.cornRight = i;
+					car.sensor.width = car.sensor.cornRight - car.sensor.cornLeft;	
+					modeFind = 2;
+					}
+				else
+					modeFind = 0;
+				}
+				
+			}
+			else
+				break;
 			
-		}
-		else
-			break;
-		
-		i++;
-		
+			i++;
+			
+	}
 	}
 
 
@@ -184,8 +192,7 @@ void taskUpdateCameraEnd(void)
 	
 	car.sensor.deriveWidth = car.sensor.deriveCornRight - car.sensor.deriveCornLeft;
 	#endif
-	car.sensor.width = car.sensor.cornRight - car.sensor.cornLeft;
-	
+
 	car.sensor.c4 = car.sensor.c3;
 	car.sensor.c3 = car.sensor.c2;
 	car.sensor.c2 = car.sensor.c1;
@@ -248,7 +255,7 @@ void taskUpdateCameraEnd(void)
 	
 	#else
 	
-	if((car.sensor.threshold >= car.TeachSensorMinDynRange) && (modeFind==2))
+	if(modeFind==2)
 		{
 		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)>>1;
 
@@ -276,7 +283,7 @@ void taskUpdateCameraEnd(void)
 			if(car.sensor.teachDone==0)
 				car.sensor.arrayTeach[i] = 	car.sensor.array[i] ;
 			else
-				car.sensor.arrayTeach[i] = 	(car.sensor.arrayTeach[i]*3 + car.sensor.array[i])>>2 ;
+				car.sensor.arrayTeach[i] = 	(car.sensor.arrayTeach[i] + car.sensor.array[i])>>1 ;
 			i++;
 		}
 		car.sensor.teachDone += 1;
@@ -290,6 +297,7 @@ void taskUpdateCameraEnd(void)
 	else
 		car.TeachSenseWidthMin = car.sensor.width-7;
 	car.TeachSenseWidthMax = car.sensor.width+7;
+	
 	car.TeachSensorMinDynRange = car.sensor.threshold * 9 / 16;
 		car.sensor.teachDone = 11;
 		
