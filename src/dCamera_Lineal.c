@@ -129,8 +129,8 @@ void taskUpdateCameraEnd(void)
 	{
 		
 	
-		i=2;
-		while(i<125)
+		i=3;
+		while(i<124)
 		{
 			if(modeFind==0)
 			{
@@ -259,7 +259,7 @@ void taskUpdateCameraEnd(void)
 		{
 		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)>>1;
 
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))>>1;
+		car.ctrl.error =  (S16)(car.sensor.center-car.ctrl.controlCenter);
 		
 		if(car.ctrl.error<-cal.sensorMaxError)
 			car.ctrl.error = (S16)-cal.sensorMaxError;

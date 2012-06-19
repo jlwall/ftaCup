@@ -55,20 +55,20 @@ const struct CAR_CAL cal =
 	S8  sensorMaxError;
 	U8 apexModError
 */
-	7.1,0.2,1.0,
+	7.9,0.08,0.0,
 	
 	190,270,
 	
 	25,	20,	0.65, 
 	
-	250, 
+	200, 
 	
-	4,	370,	200,
+	4,	500,	280,
 	
 	5,	30,
 	7,	21,
 	
-	5,20,60,10
+	15,20,60,0
 };
 
 
@@ -166,7 +166,7 @@ void taskPIDupdate()
 	if(car.ctrl.manualMode==2)	//auto pilot Mode ==2
 	{	
 		//set the steering position, iTerm
-		if((car.ctrl.error > (cal.errorTol/2)) || (car.ctrl.error < -(cal.errorTol/2)))
+	//	if((car.ctrl.error > (cal.errorTol/2)) || (car.ctrl.error < -(cal.errorTol/2)))
 			{					
 			car.ctrl.iTerm += (float)car.ctrl.error * car.iGain;
 			
@@ -219,13 +219,13 @@ void taskPIDupdate()
 		{
 			
 			//set the target open loop velocity
-			car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn;
+			car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn/4;
 			
 
 			//aditional speed damping for turning events
-			if(car.ctrl.targetServoPos>100)
+			if(car.ctrl.targetServoPos>150)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 3 / 5;
-			else if(car.ctrl.targetServoPos<-100)
+			else if(car.ctrl.targetServoPos<-150)
 				car.ctrl.targetVelocity = car.ctrl.targetVelocity * 3 / 5;
 
 			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos );
@@ -283,8 +283,8 @@ void task_5msec()
  	//Smoothen the velocity command target from where the App set it
 	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 7 + car.ctrl.targetVelocity)>>3;
 		
-	if(car.ctrl.velTarget > 900) //limit the applied velocity Target
-		car.ctrl.velTarget = 900;
+	if(car.ctrl.velTarget > 700) //limit the applied velocity Target
+		car.ctrl.velTarget = 700;
 	
 
 	//Apply velocities to left and right based off bias
@@ -295,13 +295,14 @@ void task_5msec()
 	vfnSet_Duty_Opwm(7,motRight);
  	vfnSet_Servo(car.ctrl.targetServoPos);
  	
+	taskUpdateCameraStart();
+ 	
 	taskCTR_5msec=0;
 }
 
 void task_10msec()
 {	
 
-	taskUpdateCameraStart();
  	taskCTR_10msec=0;
 }
 
@@ -339,8 +340,9 @@ U16 tempADC;
 		car.speedGain =  cal.maxSpeed + car.adjust.adjSpeedgain;
 		 
 		car.ctrl.autoTimer = cal.runTime;
-		car.ctrl.manualMode = 2;	
-		car.logPacketIndex = 0;	
+		car.ctrl.manualMode = 2;
+		car.ctrl.iTerm=0;
+		car.ctrl.dterm=0;
 		loger.packet[0].data[0]=0;
 	//	if(loger.packet[499].data[39]==0)
 	//	loger.packet[499].data[39]=0xff;
