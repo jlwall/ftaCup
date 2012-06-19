@@ -124,8 +124,8 @@ void taskUpdateCameraEnd(void)
 	car.sensor.cornLeft = minPosCamera;
 	car.sensor.cornRight = minPosCamera;
 	
-	i=6;
-	while(i<122)
+	i=2;
+	while(i<125)
 	{
 		if(modeFind==0)
 		{
@@ -139,9 +139,11 @@ void taskUpdateCameraEnd(void)
 		{
 			if(car.sensor.array[i] > car.sensor.threshold)
 			{
-			if(( (i - car.sensor.cornLeft) > car.sensor.TeachSenseWidthMin) && ((i - car.sensor.cornLeft) < car.sensor.TeachSenseWidthMax))	
+			if(( (i - car.sensor.cornLeft) > car.TeachSenseWidthMin) && ((i - car.sensor.cornLeft) < car.TeachSenseWidthMax))	
+				{				
 				car.sensor.cornRight = i;
-			modeFind = 2;
+				modeFind = 2;
+				}
 			}
 			
 		}
@@ -151,18 +153,7 @@ void taskUpdateCameraEnd(void)
 		i++;
 		
 	}
-	/*
-  	while(((car.sensor.array[car.sensor.cornLeft])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornLeft>10))
-		{
-		car.sensor.cornLeft--;	
-		}
-		
-		
-	while(((car.sensor.array[car.sensor.cornRight])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornRight<118))
-		{
-		car.sensor.cornRight++;	
-		}
-*/
+
 
 	#ifndef noDerv
 	
@@ -256,7 +247,7 @@ void taskUpdateCameraEnd(void)
 	
 	#else
 	
-	if((car.sensor.threshold >= car.sensor.TeachSensorMinDynRange) && (modeFind==2))
+	if((car.sensor.threshold >= car.TeachSensorMinDynRange) && (modeFind==2))
 		{
 		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)>>1;
 
@@ -291,11 +282,11 @@ void taskUpdateCameraEnd(void)
 	if(((SIU.PGPDI[2].R & 0x40000000) == 0x0000000) & car.sensor.teachDone==1) // button 2 pressed, teach line chars
 	{
 	if(car.sensor.width < 8)
-		car.sensor.TeachSenseWidthMin = car.sensor.width/2;
+		car.TeachSenseWidthMin = car.sensor.width/2;
 	else
-		car.sensor.TeachSenseWidthMin = car.sensor.width-7;
-	car.sensor.TeachSenseWidthMax = car.sensor.width+7;
-	car.sensor.TeachSensorMinDynRange = car.sensor.threshold * 9 / 16;
+		car.TeachSenseWidthMin = car.sensor.width-7;
+	car.TeachSenseWidthMax = car.sensor.width+7;
+	car.TeachSensorMinDynRange = car.sensor.threshold * 9 / 16;
 		car.sensor.teachDone = 2;
 		
 	}
@@ -385,7 +376,7 @@ void u8Capture_Pixel_Values(void)
 	//car.sensor.center = (car.sensor.center * 4 + car.sensor.c1 * 3 + car.sensor.c2 * 2 + car.sensor.c3)/10;
 	
 
-	if((car.sensor.width >= car.sensor.TeachSenseWidthMin) && (car.sensor.width <= car.sensor.TeachSenseWidthMax) && (car.sensor.threshold >= car.sensor.TeachSensorMinDynRange))
+	if((car.sensor.width >= car.TeachSenseWidthMin) && (car.sensor.width <= car.TeachSenseWidthMax) && (car.sensor.threshold >= car.TeachSensorMinDynRange))
 	{
 		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))/2;
 		

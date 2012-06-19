@@ -67,14 +67,9 @@ struct LIGHT_SENSOR
 {
 	U16  array[128];
 	U16  arrayTeach[128];
-	
-	S8  arrayDerive[128];
 	U8	cornLeft;
 	U8	cornRight;
-	U8	deriveCornLeft;
-	U8	deriveCornRight;
 	U8 	width;
-	U8 	deriveWidth;
 	U8  center;
 	U8  c1;
 	U8  c2;
@@ -84,48 +79,36 @@ struct LIGHT_SENSOR
 	U16  threshold;
 	U16  valMax;
 	U16  valMin;
-	S8  deriveValMax;
-	S8  deriveValMin;
 	U8 teachDone;
 	
-	U8  TeachSenseWidthMin;
-	U8  TeachSenseWidthMax;
-	U16  TeachSensorMinDynRange;
 	
-	
-	
-	
-};
+}; //13 bytes to log
 
 struct CAR_CTRL {
-
-float pGain;
-float iGain;
-float dGain;
-float speedGain;
-
 float iTerm;
 float dterm;  
-float radiusTarget;
 S16 targetServoPos;
 U16 targetVelocity;
 S16 biasVelocity;
-S16 errorRate;
 S16 servoDegTarget;
 U16 velTarget;
 S16 error;
 U8 straightLearn;
 U8 autoTimer;
 U8 manualMode;
-
-U16 motorCurrentLeft;
-U16 motorCurrentRight;
-
-	U8  controlCenter;
-} ;
+U8  controlCenter;
+} ; //24  bytes to log
 
 struct CAR {
 struct CAR_CTRL ctrl;
 struct LIGHT_SENSOR sensor;
 struct CAR_ADJUST adjust;
+
+float pGain;
+float iGain;
+float dGain;
+float speedGain;
+U8  TeachSenseWidthMin;
+U8  TeachSenseWidthMax;
+U16  TeachSensorMinDynRange;
 };

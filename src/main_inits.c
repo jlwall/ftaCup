@@ -214,8 +214,8 @@ void initModesAndClock(void) {
 	//ME.PCTL[5].R = 0x01; /* MPC56xxB/P/S DSPI1: select ME.RUNPC[1] */
 	//ME.PCTL[16].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
 	//ME.PCTL[17].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
-	//ME.PCTL[32].R = 0x01;       		/* MPC56xxB ADC 0: select ME.RUNPC[1] */
-  	ME.PCTL[57].R = 0x01;       		/* MPC56xxB CTUL: select ME.RUNPC[1] */
+	ME.PCTL[32].R = 0x01;       		/* MPC56xxB ADC 0: select ME.RUNPC[1] */
+  	//ME.PCTL[57].R = 0x01;       		/* MPC56xxB CTUL: select ME.RUNPC[1] */
   	ME.PCTL[48].R = 0x01;           	/* MPC56xxB/P/S LINFlex 0: select ME.RUNPC[1] */
 	ME.PCTL[68].R = 0x01;           	/* MPC56xxB/S SIUL:  select ME.RUNPC[1] */
 	ME.PCTL[72].R = 0x01;           	/* MPC56xxB/S EMIOS 0:  select ME.RUNPC[1] */
