@@ -80,6 +80,8 @@ struct LIGHT_SENSOR
 	U8  c4;
 	U8  valid;
 	U8 teachDone;
+	U16  valMaxTemp;
+	U16  valMinTemp;
 		
 }; //16 bytes to log
 

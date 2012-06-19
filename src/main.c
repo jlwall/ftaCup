@@ -510,19 +510,21 @@ void Pit1ISR(void)
    //		{ /* If PIT1Ctr is even*/
    // 	INTC.SSCIR[4].R = 2;      /*  then nvoke software interrupt 4 */
   	//	}
- 	PIT.CH[1].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
+ 
  	if(taskCTR_5msec++>=10) task_5msec();
 	if(taskCTR_10msec++>=20) task_10msec();	
 	if(taskCTR_20msec++>=40) task_20msec();
 	if(taskCTR_40msec++>=80) task_40msec();
 	if(taskCTR_1000msec++>=2000) task_1000msec();
+		PIT.CH[1].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
 }
 
 
 void Pit2ISR(void) 
 {
-	PIT.CH[2].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
+
 	taskUpdateCamera();
+		PIT.CH[2].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
 
 }
 

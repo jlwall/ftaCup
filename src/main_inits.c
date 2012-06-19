@@ -184,7 +184,7 @@ void initPads (void)
 
 void initADC(void) {
 	ADC.MCR.R = 0x80000000;         	/* Initialize ADC scan mode*/
-	ADC.NCMR[0].R = 0x00000011;      	/* Select ANP1:2 inputs for normal conversion */
+	ADC.NCMR[0].R = 0x00000001;      	/* Select ANP1:2 inputs for normal conversion */
 	ADC.CTR[0].R = 0x00008606;       	/* Conversion times for 32MHz ADClock */
     
 }
@@ -300,7 +300,7 @@ void initPIT(void) {
   INTC_InstallINTCInterruptHandler((void *)&Pit1ISR,60,0x03);
   
                               /* NOTE:  DIVIDER FROM SYSCLK TO PIT ASSUMES DEFAULT DIVIDE BY 1 */
-  PIT.CH[2].LDVAL.R = 500;       /* PIT1 timeout = 64000 sysclks x 1sec/64M sysclks = 1 msec */
+  PIT.CH[2].LDVAL.R = 300;       /* PIT1 timeout = 64000 sysclks x 1sec/64M sysclks = 1 msec */
   PIT.CH[2].TCTRL.R = 0x000000002; /* Enable PIT1 interrupt and leave PIT inactive to count */ 
  
   INTC_InstallINTCInterruptHandler((void *)&Pit2ISR,61,0x01);

@@ -50,7 +50,7 @@ void taskUpdateCamera(void)
 			{			
 			};
 			
-		if(car.sensor.teachDone>0)
+		if(car.sensor.teachDone>10)
 		{
 			car.sensor.array[iCamera] = (U16)(((ADC.CDR[0].B.CDATA ) * 512) / car.sensor.arrayTeach[iCamera]);
 		}
@@ -61,14 +61,14 @@ void taskUpdateCamera(void)
 
 		if((iCamera>5) & iCamera < 123)  //if we are in edgeless zone, lets find the min and max,
 			{	
-			if(car.sensor.valMin > car.sensor.array[iCamera]) //if a new min is found, latch it
+			if(car.sensor.valMinTemp > car.sensor.array[iCamera]) //if a new min is found, latch it
 				{
-				car.sensor.valMin = car.sensor.array[iCamera];
+				car.sensor.valMinTemp = car.sensor.array[iCamera];
 				minPosCamera = iCamera;								// set the mim pos
 				}
-			if(car.sensor.valMax < car.sensor.array[iCamera])
+			if(car.sensor.valMaxTemp < car.sensor.array[iCamera])
 				{
-				car.sensor.valMax = car.sensor.array[iCamera];			
+				car.sensor.valMaxTemp = car.sensor.array[iCamera];			
 				} 	
 			}	
 		cameraTaskState=0;
@@ -87,8 +87,8 @@ void taskUpdateCamera(void)
 
 void taskUpdateCameraStart(void)
 {
-	car.sensor.valMax = 0;
-	car.sensor.valMin = 0xFFFF;
+	car.sensor.valMaxTemp = 0;
+	car.sensor.valMinTemp = 0xFFFF;
 	
 	SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
 	SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
@@ -119,7 +119,9 @@ void taskUpdateCameraEnd(void)
 	PIT.CH[2].TCTRL.B.TEN = 0;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
 	
 	//disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
-	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)>>2;	
+	car.sensor.valMin = car.sensor.valMinTemp;
+	car.sensor.valMax = car.sensor.valMaxTemp;
+	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)>>1;	
 	car.sensor.cornLeft = minPosCamera;
 	car.sensor.cornRight = minPosCamera;
 	
@@ -265,20 +267,23 @@ void taskUpdateCameraEnd(void)
 	#endif
 
  
-	if(((SIU.PGPDI[2].R & 0x20000000) == 0x0000000) && car.sensor.teachDone==0) // button 3 pressed, teach
+	if(((SIU.PGPDI[2].R & 0x20000000) == 0x0000000) && car.sensor.teachDone<10) // button 3 pressed, teach
 	{
 	i=0;
+	
 		while(i<128)
 		{
-			car.sensor.arrayTeach[i] = 	car.sensor.array[i] ;
+			if(car.sensor.teachDone==0)
+				car.sensor.arrayTeach[i] = 	car.sensor.array[i] ;
+			else
+				car.sensor.arrayTeach[i] = 	(car.sensor.arrayTeach[i]*3 + car.sensor.array[i])>>2 ;
 			i++;
 		}
-		car.sensor.teachDone = 1;
+		car.sensor.teachDone += 1;
 		
-	}
+	}	
 	
-	
-	if(((SIU.PGPDI[2].R & 0x40000000) == 0x0000000) & car.sensor.teachDone==1) // button 2 pressed, teach line chars
+	else if(((SIU.PGPDI[2].R & 0x40000000) == 0x0000000) && car.sensor.teachDone==10) // button 2 pressed, teach line chars
 	{
 	if(car.sensor.width < 8)
 		car.TeachSenseWidthMin = car.sensor.width/2;
@@ -286,7 +291,7 @@ void taskUpdateCameraEnd(void)
 		car.TeachSenseWidthMin = car.sensor.width-7;
 	car.TeachSenseWidthMax = car.sensor.width+7;
 	car.TeachSensorMinDynRange = car.sensor.threshold * 9 / 16;
-		car.sensor.teachDone = 2;
+		car.sensor.teachDone = 11;
 		
 	}
 	
@@ -294,117 +299,4 @@ void taskUpdateCameraEnd(void)
 	//enableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 	
 }
-
- 
-void u8Capture_Pixel_Values(void)
-{
-	
-	U8 i;	
-	U8	u8minpos=64;
-	S32 	avgSum=0;
-
-	car.sensor.valMax = 0;
-	car.sensor.valMin = 0xFFFF;
-	
-	SIU.PCR[27].R = 0x0200;				/* Program the Sensor read start pin as output*/
-	SIU.PCR[29].R = 0x0200;				/* Program the Sensor Clock pin as output*/
-	SIU.PGPDO[0].R &= ~0x00000014;		/* All port line low */
-	SIU.PGPDO[0].R |= 0x00000010;		/* Sensor read start High */
-	Delay();
-	SIU.PGPDO[0].R |= 0x00000004;		/* Sensor Clock High */
-	Delay();
-	SIU.PGPDO[0].R &= ~0x00000010;		/* Sensor read start Low */ 
-	Delay();
-	SIU.PGPDO[0].R &= ~0x00000004;		/* Sensor Clock Low */
-	Delay();
-	for (i=0;i<128;i++)
-		{	
-		Delay();
-		SIU.PGPDO[0].R |= 0x00000004;	/* Sensor Clock High */	
-		ADC.MCR.B.NSTART = 1;   	
-		while(	ADC.MCR.B.NSTART ==1)
-			{			
-			};
-           if(i<64)
-			car.sensor.array[i] = (U16)(ADC.CDR[0].B.CDATA );// + (64-i)/8;
-		else
-			car.sensor.array[i] = (U16)(ADC.CDR[0].B.CDATA );// + (i-64)/8;
-
-		if((i>2) & i < 126)  //if we are in edgeless zone, lets find the min and max,
-			{	
-			if(car.sensor.valMin > car.sensor.array[i]) //if a new min is found, latch it
-				{
-				car.sensor.valMin = car.sensor.array[i];
-				u8minpos = i;								// set the mim pos
-				}
-			if(car.sensor.valMax < car.sensor.array[i])
-				{
-				car.sensor.valMax = car.sensor.array[i];			
-				} 	
-			}			
-		Delay();
-		SIU.PGPDO[0].R &= ~0x00000004;	/* Sensor Clock Low */		
-		}	
-		
-		
-	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)/2;	
-	car.sensor.cornLeft = u8minpos;
-	car.sensor.cornRight = u8minpos;
-	
-  	while(((car.sensor.array[car.sensor.cornLeft])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornLeft>2))
-		{
-		car.sensor.cornLeft--;	
-		}
-		
-		
-	while(((car.sensor.array[car.sensor.cornRight])<(car.sensor.valMin+car.sensor.threshold)) && (car.sensor.cornRight<126))
-		{
-		car.sensor.cornRight++;	
-		}
-
-	car.sensor.width = car.sensor.cornRight - car.sensor.cornLeft;
-	
-	car.sensor.c4 = car.sensor.c3;
-	car.sensor.c3 = car.sensor.c2;
-	car.sensor.c2 = car.sensor.c1;
-	car.sensor.c1 = car.sensor.center;
-	
-	car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)/2;
-
-	//A tap delay to help average the center measured position
-	//car.sensor.center = (car.sensor.center * 4 + car.sensor.c1 * 3 + car.sensor.c2 * 2 + car.sensor.c3)/10;
-	
-
-	if((car.sensor.width >= car.TeachSenseWidthMin) && (car.sensor.width <= car.TeachSenseWidthMax) && (car.sensor.threshold >= car.TeachSensorMinDynRange))
-	{
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))/2;
-		
-		if(car.ctrl.error<-cal.sensorMaxError)
-			car.ctrl.error = (S16)-cal.sensorMaxError;
-		else if(car.ctrl.error>cal.sensorMaxError)
-			car.ctrl.error = (S16)cal.sensorMaxError;
-		
-		
-		car.sensor.valid = 1;
-	}
-	else
-		car.sensor.valid = 0;
-
-	//averaging Method
-	for(i=0;i<64;i++)
-	{		
-		avgSum += car.sensor.array[i] - car.sensor.array[127-i];
-	}
-
-
-	//cross validate the sensor reading, checking the weighting average
-/*	if(car.sensor.valid == 1)
-	{
-		if((avgSum > 20) & (car.ctrl.error < -2))
-			car.sensor.valid = 0;
-		else if((avgSum < -20) & (car.ctrl.error >2))
-			car.sensor.valid = 0;
-	}*/
-
-}
-  			
+ 			
