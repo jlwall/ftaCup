@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 */
 	7.1,
 	0.2,
-	0.0,
+	1.0,
 	
 	190,
 	270,
@@ -188,12 +188,12 @@ void taskPIDupdate()
 			}
 		
 			//apply the dTerm
-			//car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.ctrl.dGain;
+			car.ctrl.dterm = (car.sensor.center - car.sensor.c2) * car.dGain;
 		
 			
 			//set the position, P, and I term only here
-			//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.ctrl.pGain + car.ctrl.iTerm + car.ctrl.dterm);
-			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain);
+			car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm + car.ctrl.dterm);
+			//car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain);
 		
 			//limit servo position
 			if(car.ctrl.targetServoPos<-constServoMax)
@@ -282,15 +282,7 @@ void taskPIDupdate()
 		
 		car.ctrl.controlCenter = 64;
 	
-	}
-	
-/*	i=0;
-	while(i<16)
-	{
-	TransmitMsgRef((U8*)&car.sensor.array[i*8],8,8+i,0x400+i);
-	i++;
-	}
-	*/		   
+	}			   
 }
 
 void task_5msec()
@@ -432,10 +424,9 @@ U16 tempADC;
 			if(tempADC>0x3C0)
 				SIU.GPDO[71].R = 1;
 		}
-		else
-		
+		else	
 		{
-				SIU.GPDO[68].R = 0;
+			SIU.GPDO[68].R = 0;
 			SIU.GPDO[69].R = 1;
 			SIU.GPDO[70].R = 1;
 			SIU.GPDO[71].R = 0;
@@ -479,7 +470,7 @@ U16 tempADC;
 
 void task_1000msec()
 {
-	if(car.ctrl.autoTimer>0)
+	if(car.ctrl.autoTimer>=0)
 	{
 		car.ctrl.autoTimer--;
 		if((car.ctrl.autoTimer==0)&car.ctrl.manualMode==2)
