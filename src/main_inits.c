@@ -300,7 +300,7 @@ void initPIT(void) {
   INTC_InstallINTCInterruptHandler((void *)&Pit1ISR,60,0x03);
   
                               /* NOTE:  DIVIDER FROM SYSCLK TO PIT ASSUMES DEFAULT DIVIDE BY 1 */
-  PIT.CH[2].LDVAL.R = 300;       /* PIT1 timeout = 64000 sysclks x 1sec/64M sysclks = 1 msec */
+  PIT.CH[2].LDVAL.R = 500;       /* PIT1 timeout = 64000 sysclks x 1sec/64M sysclks = 1 msec */
   PIT.CH[2].TCTRL.R = 0x000000002; /* Enable PIT1 interrupt and leave PIT inactive to count */ 
  
   INTC_InstallINTCInterruptHandler((void *)&Pit2ISR,61,0x01);
@@ -308,7 +308,7 @@ void initPIT(void) {
 
 void initSwIrq4(void) {
   INTC.PSR[4].R = 2;		/* Software interrupt 4 IRQ priority = 2 */
-  INTC_InstallINTCInterruptHandler((void *)&SwIrq4ISR,04,0x02);
+  INTC_InstallINTCInterruptHandler((void *)&SwIrq4ISR,04,0x04);
 }
 
 void enableIrq(void) {

@@ -28,10 +28,10 @@ IVOR0trap:  b	IVOR0trap	 // IVOR 0 interrupt handler
 IVOR1trap:  b	IVOR1trap	 // IVOR 1 interrupt handler
 						
 				.align SIXTEEN_BYTES       
-IVOR2trap:  b	IVOR2trap	 // IVOR 2 interrupt handler
+IVOR2trap:  nop//bl	//IVOR2trap	 // IVOR 2 interrupt handler
 
 				.align SIXTEEN_BYTES       
-IVOR3trap:  b	IVOR3trap	 // IVOR 3 interrupt handler
+IVOR3trap:  nop//b	IVOR3trap	 // IVOR 3 interrupt handler
 
 				.align SIXTEEN_BYTES       
 IVOR4trap:  b   INTC_INTCInterruptHandler // External Interrupt

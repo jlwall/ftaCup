@@ -87,11 +87,46 @@ const struct CAR_CAL cal =
 
 //**function Prototypes*//
 
+#define FLASH_CONFIG_DATA 0x1084126F /* MPC56xxS flash config value for 64 MHz */
+#define FLASH_CONFIG_REG CFLASH.PFCR0.R /* Flash config. register address */
+#define FLASH_ACCESS_PROT_DATA 0x03F2005D /* MPC56xxS flash access prot. value */
+#define FLASH_ACCESS_PROT_REG CFLASH.FAPR.R /* Flash Access Prot. Reg. address */
+asm void enable_accel_BTB(void) {
+li r0, 0 /* Enable branch acceleration (HID[PBRED]=0) */
+mtHID0 r0
+li r0, 0x0201 /* Invalidate Branch Target Buffers and enable them */
+mtBUCSR r0
+}
 
 int main(void) 
 {
 	volatile int i = 0;
 	char option = 0;
+	
+	
+	/* NOTE: Structures are default aligned on a boundary which is a multiple of */
+/* the largest sized element, 4 bytes in this case. The first two */
+/* instructions are 4 bytes, so the last instruction is duplicated to */
+/* avoid the compiler adding padding of 2 bytes before the instruction. */
+uint32_t mem_write_code_vle [] = {
+0x54640000, /* e_stw r3,(0)r4 machine code: writes r3 contents to addr in r4 */
+0x7C0006AC, /* mbar machine code: ensure prior store completed */
+0x00040004 /* 2 se_blr's machine code: branches to return address in link reg.*/
+};
+typedef void (*mem_write_code_ptr_t)(uint32_t, uint32_t);
+/* create a new type def: a func pointer called mem_write_code_ptr_t */
+/* which does not return a value (void) */
+/* and will pass two 32 bit unsigned integer values */
+/* (per EABI, the first parameter will be in r3, the second r4) */
+(*((mem_write_code_ptr_t)mem_write_code_vle)) /* cast mem_write_code as func ptr*/
+/* * de-references func ptr, i.e. converts to func*/
+(FLASH_CONFIG_DATA, /* which passes integer (in r3) */
+(uint32_t)&FLASH_CONFIG_REG); /* and address to write integer (in r4) */
+(*((mem_write_code_ptr_t)mem_write_code_vle)) /* cast mem_write_code as func ptr*/
+/* * de-references func ptr, i.e. converts to func*/
+(FLASH_ACCESS_PROT_DATA, /* which passes integer (in r3) */
+(uint32_t)&FLASH_ACCESS_PROT_REG); /* and address to write integer (in r4) */
+enable_accel_BTB(); /* Enable branch accel., branch target buffers */
 
 	car.ctrl.biasVelocity = constBiasCenter;
 	car.ctrl.targetServoPos = 0;
@@ -125,103 +160,13 @@ int main(void)
   for (;;) {
   }
 
-/*
-  		TransmitData("\n\r**The Freescale FTA**");
-		TransmitData("\n\r*********************");
-		TransmitData("0.Stop Mode\n\r");
-		TransmitData("1.Manual\n\r");
-		TransmitData("2.AutoPilot\n\r");
-		TransmitData("3.ServoTest\n\r");
-		TransmitData("6.Camera\n\r");
-		TransmitData("\n\r**********************");
-		
-		option = ReadData();
-		
-		switch(option)
-		{
-			case '0':
-				car.ctrl.manualMode = 0;
-			break;			
-			case '1':
-				
-				TransmitData("\n\r**Manual Mode**");
-				TransmitData("\n\r*********************");
-				SIU.PGPDO[0].R = 0x0000C000;	
-				car.ctrl.targetVelocity = 0;
-				car.ctrl.targetServoPos = 0;
-				car.ctrl.biasVelocity = constBiasCenter;				
-				car.ctrl.manualMode = 1;   //0 = dormant, 1 = manual, 2 = auto
-				
-				 for (;;) 
-				 {
-					option = ReadData();
-			
-					switch(option)
-					{
-						case 'r':	car.ctrl.biasVelocity -= 5; 
-							if(car.ctrl.biasVelocity <0)
-								car.ctrl.biasVelocity =0;	break;
-						case 'y':	car.ctrl.biasVelocity += 5; 
-							if(car.ctrl.biasVelocity >constBiasCenter*2)
-								car.ctrl.biasVelocity =constBiasCenter*2
-								;break;
-						case 'f':	car.ctrl.targetServoPos -= 8; break;
-						case 'h':	car.ctrl.targetServoPos += 8; break;
-						case 't':	car.ctrl.targetVelocity += 10; break;
-						case 'g':
-							car.ctrl.targetVelocity -= 10; 
-							if(car.ctrl.targetVelocity <0)
-								car.ctrl.targetVelocity =0;							
-							break;
-						case 'x':goto endOut; break;
-					}						
-					
-				 }
-				 endOut:
-				 	SIU.PGPDO[0].R = 0x00000000;	
-				 	car.ctrl.manualMode = 0;
-			break;
-			case '2':
-				SIU.PGPDO[0].R = 0x0000C000;
-				car.ctrl.autoTimer = cal.runTime;
-				car.ctrl.manualMode = 2;
-			break;
-			case '3':  
-				SERVO();  // test the servo
-			break;
-		
-			case '6':
-				printlistall();  //camera debug output
-			break;	
-			
-			default:
-			TransmitData((char*)&option);
-			break;
-		}
-  }
-  */
 }
 
 
 
 void task_2msec()
 {
- 	U32 motLeft;
-  	U32 motRight;
- 
- 	//Smoothen the velocity command target from where the App set it
-	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 7 + car.ctrl.targetVelocity)>>3;
-		
-	if(car.ctrl.velTarget > 900) //limit the applied velocity Target
-		car.ctrl.velTarget = 900;
-	
 
-	//Apply velocities to left and right based off bias
-	motLeft = ((U32)car.ctrl.velTarget * (U32)car.ctrl.biasVelocity)/constBiasCenter;
-	motRight = ((U32)car.ctrl.velTarget * (constBiasCenter*2-(U32)car.ctrl.biasVelocity))/constBiasCenter;
-
-	vfnSet_Duty_Opwm(6,motLeft);
-	vfnSet_Duty_Opwm(7,motRight);
 
 	taskCTR_2msec=0;
 }
@@ -350,6 +295,22 @@ void taskPIDupdate()
 
 void task_5msec()
 {
+ 	U32 motLeft;
+  	U32 motRight;
+ 
+ 	//Smoothen the velocity command target from where the App set it
+	car.ctrl.velTarget = (U16)((U32)car.ctrl.velTarget * 7 + car.ctrl.targetVelocity)>>3;
+		
+	if(car.ctrl.velTarget > 900) //limit the applied velocity Target
+		car.ctrl.velTarget = 900;
+	
+
+	//Apply velocities to left and right based off bias
+	motLeft = ((U32)car.ctrl.velTarget * (U32)car.ctrl.biasVelocity)/constBiasCenter;
+	motRight = ((U32)car.ctrl.velTarget * (constBiasCenter*2-(U32)car.ctrl.biasVelocity))/constBiasCenter;
+
+	vfnSet_Duty_Opwm(6,motLeft);
+	vfnSet_Duty_Opwm(7,motRight);
  	vfnSet_Servo(car.ctrl.targetServoPos);
  	
 	taskCTR_5msec=0;
@@ -513,18 +474,8 @@ U16 tempADC;
 	taskCTR_40msec=0;
 }
 
-void task_100msec()
-{
-	SendStatusPacket();
-	taskCTR_100msec=0;
-}
 
 
-void task_500msec()
-{
-
-	taskCTR_500msec=0;
-}
 
 void task_1000msec()
 {
@@ -534,26 +485,9 @@ void task_1000msec()
 		if((car.ctrl.autoTimer==0)&car.ctrl.manualMode==2)
 		{			
 			car.ctrl.manualMode=0;	
-			SIU.PGPDO[0].R = 0x00000000;		
+			SIU.PGPDO[0].R = 0x00000000;
 		}
 	}	
-	
-	if((SIU.PGPDI[2].R & 0x20000000) == 0x00)
-	{
-		car.ctrl.targetServoPos += 50;	
-	//DO SOME SWITCH CAL MODDING HERE
-	}
-	else 	if((SIU.PGPDI[2].R & 0x40000000) == 0x00)
-	{
-		car.ctrl.targetServoPos -= 50;	
-	//DO SOME SWITCH CAL MODDING HERE
-	}
-	else
-	{
-	}
-	
-	
-
 	
 	taskCTR_1000msec=0;
 }
@@ -572,18 +506,24 @@ void Delay(void)
 void Pit1ISR(void) 
 {
 	Pit1Ctr++;              /* Increment interrupt counter */
-  	if ((Pit1Ctr & 1)==0)
-   		{ /* If PIT1Ctr is even*/
-    	INTC.SSCIR[4].R = 2;      /*  then nvoke software interrupt 4 */
-  		}
+  //	if ((Pit1Ctr & 1)==0)
+   //		{ /* If PIT1Ctr is even*/
+   // 	INTC.SSCIR[4].R = 2;      /*  then nvoke software interrupt 4 */
+  	//	}
  	PIT.CH[1].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
+ 	if(taskCTR_5msec++>=10) task_5msec();
+	if(taskCTR_10msec++>=20) task_10msec();	
+	if(taskCTR_20msec++>=40) task_20msec();
+	if(taskCTR_40msec++>=80) task_40msec();
+	if(taskCTR_1000msec++>=2000) task_1000msec();
 }
 
 
 void Pit2ISR(void) 
 {
-	taskUpdateCamera();
 	PIT.CH[2].TFLG.B.TIF = 1;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
+	taskUpdateCamera();
+
 }
 
 
@@ -591,15 +531,6 @@ void SwIrq4ISR(void)
 {
 	SWirq4Ctr++;		 		/* Increment interrupt counter */
 	
-	//task running
-	if(taskCTR_2msec++>=2) task_2msec();
-	if(taskCTR_5msec++>=5) task_5msec();
-	if(taskCTR_10msec++>=10) task_10msec();	
-	if(taskCTR_20msec++>=20) task_20msec();
-	if(taskCTR_40msec++>=40) task_40msec();
-	if(taskCTR_100msec++>=100) task_100msec();
-	if(taskCTR_500msec++>=500) task_500msec();
-	if(taskCTR_1000msec++>=1000) task_1000msec();
 
 	
   	INTC.SSCIR[4].R = 1;		/* Clear channel's flag */  
@@ -625,10 +556,10 @@ void setupBiasTable()
 	
 	
 	i = 39;
-	while(i>0)
+	while(i>=0)
 	{
 	rad = -(float)(i-40)*10;
-	res = 1000 - -0.0007f*rad*rad - 0.1264f * rad + 493.18f;
+	res = 1000-(-0.0007f*rad*rad - 0.1264f * rad + 493.18f);
 	car.adjust.biasVelTable[i] = (S16)res;
 	
 	

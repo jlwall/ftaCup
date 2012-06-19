@@ -39,7 +39,7 @@ extern const struct CAR_CAL cal;
 
 void taskUpdateCamera(void)
 {
-
+ 
 	if(cameraTaskState==1)
 	{
 		
@@ -82,7 +82,6 @@ void taskUpdateCamera(void)
 	SIU.PGPDO[0].R &= ~0x00000004;	/* Sensor Clock Low */	
 	cameraTaskState=1;
 	}
-	
 
 }
 
@@ -120,7 +119,7 @@ void taskUpdateCameraEnd(void)
 	PIT.CH[2].TCTRL.B.TEN = 0;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
 	
 	//disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
-	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)/2;	
+	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)>>2;	
 	car.sensor.cornLeft = minPosCamera;
 	car.sensor.cornRight = minPosCamera;
 	
@@ -199,9 +198,9 @@ void taskUpdateCameraEnd(void)
 		{
 			
 		
-		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft + car.sensor.deriveCornRight + car.sensor.deriveCornLeft)/4;
+		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft + car.sensor.deriveCornRight + car.sensor.deriveCornLeft)>>4;
 
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))/2;
+		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))>>1;
 		
 		if(car.ctrl.error<-cal.sensorMaxError)
 			car.ctrl.error = (S16)-cal.sensorMaxError;
@@ -213,9 +212,9 @@ void taskUpdateCameraEnd(void)
 		}
 		else
 		{
-		car.sensor.center = (car.sensor.deriveCornRight + car.sensor.deriveCornLeft)/2;
+		car.sensor.center = (car.sensor.deriveCornRight + car.sensor.deriveCornLeft)>>1;
 
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))/2;
+		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))>>1;
 		
 		if(car.ctrl.error<-cal.sensorMaxError)
 			car.ctrl.error = (S16)-cal.sensorMaxError;
@@ -230,9 +229,9 @@ void taskUpdateCameraEnd(void)
 	}
 	else if((modeFind==2) && (car.sensor.threshold >= car.sensor.TeachSensorMinDynRange))
 	{
-		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)/2;
+		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)>>1;
 
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))/2;
+		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))>>1;
 		
 		if(car.ctrl.error<-cal.sensorMaxError)
 			car.ctrl.error = (S16)-cal.sensorMaxError;
