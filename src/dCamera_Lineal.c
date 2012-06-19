@@ -121,7 +121,7 @@ void taskUpdateCameraEnd(void)
 	//disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 	car.sensor.valMin = car.sensor.valMinTemp;
 	car.sensor.valMax = car.sensor.valMaxTemp;
-	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)>>1;	
+	car.sensor.threshold = (car.sensor.valMax - car.sensor.valMin)>>2;	
 	car.sensor.cornLeft = minPosCamera;
 	car.sensor.cornRight = minPosCamera;
 	

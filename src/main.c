@@ -73,12 +73,12 @@ const struct CAR_CAL cal =
 	200,
 	
 	5,
-	20,
+	30,
 	7,
 	21,
-	6,
+	5,
 	
-	40,60,10
+	20,60,10
 };
 
 
@@ -574,9 +574,9 @@ void setupBiasTable()
 
 S16 lookupBiasVel(S16 pwmTarget)
 {
-	S8 index = (S8)((pwmTarget/10)+40);
+	S8 index = (S8)((S8)(pwmTarget/10)+40);
 	
-	if(index>0) index = 0;
+	if(index<0) index = 0;
 	if(index>80) index = 80;
 	return car.adjust.biasVelTable[(U8)index];
 	
