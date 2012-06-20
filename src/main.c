@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	6.1,0.020,0.8,
+	6.2,0.026,0.9,
 	
 	190,270,
 	
@@ -65,15 +65,17 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	840,	400,
+	4,	880,	400,
 	
 	5,	30,
 	7,	21,
 	
-	35,20,60,2,180
+	35,20,60,10,180
 };
 
-
+U8 apexEntry = 0;
+S16 apexEntryIn=0;
+S16 apexExitDown=0;
     uint32_t Pit1Ctr = 0;   /* Counter for PIT 1 interrupts */
     uint32_t SWirq4Ctr = 0;	/* Counter for software interrupt 4 */
 
@@ -179,8 +181,10 @@ void taskPIDupdate()
 				car.ctrl.iTerm = -cal.servGainIgainLimit;
 			}
 		
-		
+		if(apexExitDown<180)
 		car.ctrl.dterm = (car.sensor.c2 - car.sensor.center) * car.dGain;
+		else
+		car.ctrl.dterm = 0;
 		
 			
 			//set the position, P, and I term only here
@@ -212,9 +216,41 @@ void taskPIDupdate()
 					car.ctrl.straightLearn = 0;
 			}
 			
+			//apex set
+			if((car.ctrl.targetServoPos>200) && apexExitDown == 0)
+			{
+				apexEntryIn = 100;
+				apexExitDown = 100;
+				apexEntry = 1;
+			}
+			else 	if((car.ctrl.targetServoPos<-200) && apexExitDown == 0)
+			{
+				apexEntryIn = 100;
+				apexExitDown = 100;
+				apexEntry = 0;
+			}
 			
 			//set the control center Apex seeking portion
-			car.ctrl.controlCenter = (U8)(64 + car.ctrl.targetServoPos * (S16)cal.apexModError / constServoMax);		
+			if(apexEntryIn>0)
+			{
+				
+				if(apexEntry==1)
+					car.ctrl.controlCenter = (U8)((S16)64 + (S16)((100-apexEntryIn) * (S16)cal.apexModError / 128));
+				else
+					car.ctrl.controlCenter = (U8)((S16)64 - (S16)((100-apexEntryIn) * (S16)cal.apexModError / 128));
+				apexEntryIn--;
+				}
+			else if(apexExitDown>0)
+			{
+				
+				if(apexEntry==1)
+					car.ctrl.controlCenter = (U8)((S16)64 + (S16)(apexExitDown * (S16)cal.apexModError / 128));
+				else
+					car.ctrl.controlCenter = (U8)((S16)64 - (S16)(apexExitDown * (S16)cal.apexModError / 128));
+				apexExitDown--;
+				}
+			else
+				car.ctrl.controlCenter = (U8)(64);
 			//car.ctrl.controlCenter = 64;
 	
 		if(car.sensor.valid >=1) //sensor has a valid read
