@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	6.1,0.021,0.9,
+	6.0,0.021,0.7,
 	
 	190,270,
 	
@@ -65,12 +65,12 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	840,	550,
+	4,	710,	450,
 	
 	5,	30,
 	7,	21,
 	
-	35,20,60,10,180
+	35,20,60,8,140
 };
 
 U8 breakLearn = 0;
@@ -217,7 +217,7 @@ void taskPIDupdate()
 					car.ctrl.straightLearn = 0;
 				
 				if(car.ctrl.straightLearn >100)
-					breakLearn = 10;
+					breakLearn = 5;
 			}
 			
 			//apex set
@@ -527,15 +527,16 @@ U16 tempADC;
 
 void task_1000msec()
 {
-	if(car.ctrl.autoTimer>=0)
+/*	if(car.ctrl.autoTimer>=0)
 	{
 		car.ctrl.autoTimer--;
-		if((car.ctrl.autoTimer==0)&car.ctrl.manualMode==2)
-		{			
-			car.ctrl.manualMode=0;	
+	//	if((car.ctrl.autoTimer==0)&car.ctrl.manualMode==2)
+	//	{			
+		//	car.ctrl.manualMode=0;	
 			SIU.PGPDO[0].R = 0x00000000;
 		}
-	}	
+	}
+	*/	
 	
 	taskCTR_1000msec=0;
 }
