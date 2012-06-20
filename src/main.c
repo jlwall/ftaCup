@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	6.2,0.026,0.9,
+	6.1,0.021,0.9,
 	
 	190,270,
 	
@@ -65,7 +65,7 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	880,	400,
+	4,	840,	550,
 	
 	5,	30,
 	7,	21,
@@ -73,6 +73,7 @@ const struct CAR_CAL cal =
 	35,20,60,10,180
 };
 
+U8 breakLearn = 0;
 U8 apexEntry = 0;
 S16 apexEntryIn=0;
 S16 apexExitDown=0;
@@ -214,6 +215,9 @@ void taskPIDupdate()
 				}
 				else
 					car.ctrl.straightLearn = 0;
+				
+				if(car.ctrl.straightLearn >100)
+					breakLearn = 10;
 			}
 			
 			//apex set
@@ -342,6 +346,15 @@ void task_5msec()
 	motRight = ((U32)car.ctrl.velTarget * 500)/constBiasCenter;
 	
 	}
+	if(breakLearn>0)
+	{
+		if(car.ctrl.targetServoPos>100)
+			motRight = 0;
+		else
+			motLeft =0;
+		breakLearn--;
+	}
+	
 
 	vfnSet_Duty_Opwm(6,motLeft);
 	vfnSet_Duty_Opwm(7,motRight);
