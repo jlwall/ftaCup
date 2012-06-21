@@ -1,6 +1,3 @@
-
-
-
 #include "MPC5604B_M07N.h"
 #include "Driver_MPC5604B.h"
 #include "dEMIOS.h"
@@ -33,9 +30,9 @@ extern const struct CAR_CAL cal;
 /**************************************************************************************************************/
 
 
-	vU8 iCamera;
-	vU8 cameraTaskState;
-	vU8 minPosCamera;						
+vU8 iCamera;
+vU8 cameraTaskState;
+vU8 minPosCamera;						
 
 void taskUpdateCamera(void)
 {
@@ -113,8 +110,8 @@ void taskUpdateCameraEnd(void)
 {
 	U8 i;
 	U8 modeFind=0;
-	U32 avgSum = 0;
-	S8 derive = 0;
+	U8 centerTemp;
+	U8 modeTemp;
 	
 	PIT.CH[2].TCTRL.B.TEN = 0;    /* MPC56xxB/P/S: Clear PIT 1 flag by writing 1 */
 	
@@ -164,34 +161,6 @@ void taskUpdateCameraEnd(void)
 	}
 
 
-	#ifndef noDerv
-	
-	car.sensor.deriveValMax = -100;
-	car.sensor.deriveValMin = 100;
-	car.sensor.deriveCornLeft = 10;
-	car.sensor.deriveCornRight = 118;
-	
-	//averaging Method
-	for(i=10;i<118;i++)
-	{		
-		derive = (S8)(((S16)derive*5 +(S16)car.sensor.array[i] - (S16)car.sensor.array[i-1])/6); //averaged derivative
-		car.sensor.arrayDerive[i] = derive;
-			
-		if(car.sensor.deriveValMin > car.sensor.arrayDerive[i]) //if a new min is found, latch it
-			{
-			car.sensor.deriveValMin = car.sensor.arrayDerive[i];
-			car.sensor.deriveValMax = -100; //reset max find for RHS
-			car.sensor.deriveCornLeft = i;								// set the mim pos
-			}
-		if(car.sensor.deriveValMax < car.sensor.arrayDerive[i])
-			{
-			car.sensor.deriveValMax = car.sensor.arrayDerive[i];
-			car.sensor.deriveCornRight = i;				
-			} 		
-	}
-	
-	car.sensor.deriveWidth = car.sensor.deriveCornRight - car.sensor.deriveCornLeft;
-	#endif
 
 	car.sensor.c4 = car.sensor.c3;
 	car.sensor.c3 = car.sensor.c2;
@@ -199,79 +168,101 @@ void taskUpdateCameraEnd(void)
 	car.sensor.c1 = car.sensor.center;
 	
 
-		#ifndef noDerv
-	//A tap delay to help average the center measured position
-	if((car.sensor.deriveWidth >= cal.senseWidthMinDer) && (car.sensor.deriveWidth <= cal.senseWidthMaxDer)) //derivOKay
-	{
-		if(modeFind==2) //stokay found both
-		{
-			
-		
-		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft + car.sensor.deriveCornRight + car.sensor.deriveCornLeft)>>4;
 
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))>>1;
-		
-		if(car.ctrl.error<-cal.sensorMaxError)
-			car.ctrl.error = (S16)-cal.sensorMaxError;
-		else if(car.ctrl.error>cal.sensorMaxError)
-			car.ctrl.error = (S16)cal.sensorMaxError;
-		
-		
-		car.sensor.valid = 3;
-		}
-		else
-		{
-		car.sensor.center = (car.sensor.deriveCornRight + car.sensor.deriveCornLeft)>>1;
-
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))>>1;
-		
-		if(car.ctrl.error<-cal.sensorMaxError)
-			car.ctrl.error = (S16)-cal.sensorMaxError;
-		else if(car.ctrl.error>cal.sensorMaxError)
-			car.ctrl.error = (S16)cal.sensorMaxError;
-		
-		
-		car.sensor.valid = 2;	
-			
-		}
-	
-	}
-	else if((modeFind==2) && (car.sensor.threshold >= car.sensor.TeachSensorMinDynRange))
-	{
-		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)>>1;
-
-		car.ctrl.error =  (S16)((car.ctrl.error + ((S16)car.sensor.center-car.ctrl.controlCenter)))>>1;
-		
-		if(car.ctrl.error<-cal.sensorMaxError)
-			car.ctrl.error = (S16)-cal.sensorMaxError;
-		else if(car.ctrl.error>cal.sensorMaxError)
-			car.ctrl.error = (S16)cal.sensorMaxError;
-		
-		
-		car.sensor.valid = 1;
-	}
-	else
-		car.sensor.valid = 0;
-	
-	#else
 	
 	if(modeFind==2)
 		{
-		car.sensor.center = (car.sensor.cornRight + car.sensor.cornLeft)>>1;
-
-		car.ctrl.error =  (S16)(car.sensor.center-car.ctrl.controlCenter);
+		centerTemp = (car.sensor.cornRight + car.sensor.cornLeft)>>1;
 		
+		modeTemp = 0;
+		
+		if(centerTemp <=59)
+			modeTemp = camLeft;
+		else if(centerTemp>=69)
+			modeTemp = camRight;
+		else
+			modeTemp = camCenter;
+		
+		switch(car.sensor.valid)
+		{
+			case camLostLeft:  //cam currently lost, trying to find left
+				if(modeTemp == camLeft)
+					{
+					car.sensor.valid = camLeft;
+					car.sensor.center = centerTemp;
+					}			
+			break;
+			case camLostRight: //cam currently lost, trying to find right
+				if(modeTemp == camRight)
+					{
+					car.sensor.valid = camRight;
+					car.sensor.center = centerTemp;
+					}			
+			break;			
+			case camCenter:	// cam was Center, change to left or right is needed
+				car.sensor.center = centerTemp;
+				car.sensor.valid = modeTemp;
+			break;
+			case camLeft:	// cam was Left, move to LRC if needed
+				car.sensor.center = centerTemp;
+				car.sensor.valid = modeTemp;
+			break;
+			case camRight:	// cam was Right, move to LRC if needed
+				car.sensor.center = centerTemp;
+				car.sensor.valid = modeTemp;
+			break;
+			default: //called on first entry, or when valid has been corrupted outside of 1<->5
+				
+				car.sensor.valid = modeTemp;
+			break;			
+		}
+		
+		//we have cleaned the center Error, and mode, calculate error on current valid center
+
+		if(car.sensor.errorCounter>0) //if Error is Greater than one, decrement it
+			car.sensor.errorCounter--;
+		
+		car.ctrl.error =  (S16)(car.sensor.center-car.ctrl.controlCenter);
+
+		//Limit the error to calibrated outer window		
 		if(car.ctrl.error<-cal.sensorMaxError)
 			car.ctrl.error = (S16)-cal.sensorMaxError;
 		else if(car.ctrl.error>cal.sensorMaxError)
 			car.ctrl.error = (S16)cal.sensorMaxError;
-		
-		
-		car.sensor.valid = 1;
 	}
 	else
-		car.sensor.valid = 0;
-	#endif
+	{
+		if(car.sensor.errorCounter<20) //if Error is less than max increment it
+			car.sensor.errorCounter++;
+		
+		// we have recieved a bad frame
+		switch(car.sensor.valid)
+		{			
+			case camCenter:	// cam was Center, we have an invalid frame
+				if(car.sensor.errorCounter>5)
+				{
+					
+				}
+			break;
+			case camLeft:	// cam was Left, move to LostLeft if needed
+				if(car.sensor.errorCounter>5)
+					{
+					car.sensor.valid = camLostLeft;					
+					}				
+				
+			break;
+			case camRight:	// cam was Right, move to LostRight if needed
+				if(car.sensor.errorCounter>5)
+					{
+					car.sensor.valid = camLostRight;
+					}
+				
+			break;
+			default: //called on first entry, or when valid has been corrupted outside of 1<->5
+				
+			break;			
+		}
+	}
 
  
 	if(((SIU.PGPDI[2].R & 0x20000000) == 0x0000000) && car.sensor.teachDone<10) // button 3 pressed, teach

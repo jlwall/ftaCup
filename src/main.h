@@ -81,6 +81,7 @@ struct LIGHT_SENSOR
 	U8 teachDone;
 	U16  valMaxTemp;
 	U16  valMinTemp;
+	U8 	errorCounter;
 		
 }; //16 bytes to log
 

@@ -1,6 +1,10 @@
 /* Function Prototypes */
 
-
+#define camLostLeft 	1
+#define camLeft 		2
+#define camCenter 		3
+#define camRight 		4
+#define camLostRight 	5
 
 void vfnInit_CamLin_Adc(void);
 /**
