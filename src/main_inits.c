@@ -33,7 +33,7 @@ void initMainHardware(void)
 
 	initINTC();			/* Initialize INTC for software vector mode */
 	initPIT();		  	/* Initialize PIT1 for 1KHz IRQ, priority 2 */
-	initSwIrq4();			/* Initialize software interrupt 4 */
+//	initSwIrq4();			/* Initialize software interrupt 4 */
 	
 	SIU.PSMI[0].R = 1;  //can1rxd=43
 	SIU.PSMI[7].R = 2;  //dspi1_sscl=114
@@ -306,10 +306,10 @@ void initPIT(void) {
   INTC_InstallINTCInterruptHandler((void *)&Pit2ISR,61,0x01);
 }
 
-void initSwIrq4(void) {
-  INTC.PSR[4].R = 2;		/* Software interrupt 4 IRQ priority = 2 */
-  INTC_InstallINTCInterruptHandler((void *)&SwIrq4ISR,04,0x04);
-}
+//void initSwIrq4(void) {
+//  INTC.PSR[4].R = 2;		/* Software interrupt 4 IRQ priority = 2 */
+ // INTC_InstallINTCInterruptHandler((void *)&SwIrq4ISR,04,0x04);
+//}
 
 void enableIrq(void) {
   INTC.CPR.B.PRI = 0;          /* Single Core: Lower INTC's current priority */

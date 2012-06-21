@@ -24,8 +24,6 @@ void initINTC(void);
 
 void initPIT(void);
 
-void initSwIrq4(void);
-
 void enableIrq(void);
 
 void disableIrq(void);
