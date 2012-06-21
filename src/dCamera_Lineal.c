@@ -188,15 +188,21 @@ void taskUpdateCameraEnd(void)
 			case camLostLeft:  //cam currently lost, trying to find left
 				if(modeTemp == camLeft)
 					{
-					car.sensor.valid = camLeft;
-					car.sensor.center = centerTemp;
+					if(car.sensor.errorCounter < 3) //debounce off Error NP step
+						{
+						car.sensor.valid = camLeft;
+						car.sensor.center = centerTemp;
+						}
 					}			
 			break;
 			case camLostRight: //cam currently lost, trying to find right
 				if(modeTemp == camRight)
 					{
-					car.sensor.valid = camRight;
-					car.sensor.center = centerTemp;
+					if(car.sensor.errorCounter < 3) //debounce off Error NP step
+						{
+						car.sensor.valid = camRight;
+						car.sensor.center = centerTemp;
+						}
 					}			
 			break;			
 			case camCenter:	// cam was Center, change to left or right is needed
@@ -218,21 +224,21 @@ void taskUpdateCameraEnd(void)
 		}
 		
 		//we have cleaned the center Error, and mode, calculate error on current valid center
-
 		if(car.sensor.errorCounter>0) //if Error is Greater than one, decrement it
 			car.sensor.errorCounter--;
 		
+		//calculate the Error Term here
 		car.ctrl.error =  (S16)(car.sensor.center-car.ctrl.controlCenter);
 
 		//Limit the error to calibrated outer window		
-		if(car.ctrl.error<-cal.sensorMaxError)
+		if(car.ctrl.error < -cal.sensorMaxError)
 			car.ctrl.error = (S16)-cal.sensorMaxError;
-		else if(car.ctrl.error>cal.sensorMaxError)
+		else if(car.ctrl.error > cal.sensorMaxError)
 			car.ctrl.error = (S16)cal.sensorMaxError;
 	}
 	else
 	{
-		if(car.sensor.errorCounter<20) //if Error is less than max increment it
+		if(car.sensor.errorCounter<10) //if Error is less than max increment it
 			car.sensor.errorCounter++;
 		
 		// we have recieved a bad frame
@@ -240,23 +246,21 @@ void taskUpdateCameraEnd(void)
 		{			
 			case camCenter:	// cam was Center, we have an invalid frame
 				if(car.sensor.errorCounter>5)
-				{
+					{
 					
-				}
+					}
 			break;
 			case camLeft:	// cam was Left, move to LostLeft if needed
 				if(car.sensor.errorCounter>5)
 					{
 					car.sensor.valid = camLostLeft;					
-					}				
-				
+					}							
 			break;
 			case camRight:	// cam was Right, move to LostRight if needed
 				if(car.sensor.errorCounter>5)
 					{
 					car.sensor.valid = camLostRight;
-					}
-				
+					}				
 			break;
 			default: //called on first entry, or when valid has been corrupted outside of 1<->5
 				
