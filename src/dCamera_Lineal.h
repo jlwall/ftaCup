@@ -1,5 +1,6 @@
 /* Function Prototypes */
 
+#define camLostCenter	0
 #define camLostLeft 	1
 #define camLeft 		2
 #define camCenter 		3
