@@ -57,7 +57,7 @@ const struct CAR_CAL cal =
 	U8 apexModError
 		U16 maxLearn;
 */
-	6.0,0.021,0.7,
+	6.5,0.021,0.8,
 	
 	190,270,
 	
@@ -65,7 +65,7 @@ const struct CAR_CAL cal =
 	
 	100, 
 	
-	4,	710,	450,
+	4,	680,	450,
 	
 	5,	30,
 	7,	21,
