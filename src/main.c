@@ -1,31 +1,23 @@
 #include "MPC5604B_M07N.h"
-
-
 #include "typedefs.h"
 #include "main.h"
+#include "dCamera_Lineal.h"
 
 struct LogStruct loger;
+struct CAR car;
 
-vuint32_t i,j;                					/* Dummy idle counter */
-
-volatile uint32_t dly,lly,chw,adcdata,curdata;
-
-int16_t posr,posl;
-float posp,posi,poserr,posd,last_poserr[10]; 
-
-float kp=0.2,kd=0.4,ki=0.05,p;
-
-S16 testServo = -350;
-
-U16 taskCTR_2msec = 0;
 U16 taskCTR_5msec = 0;
 U16 taskCTR_10msec = 0;
 U16 taskCTR_20msec = 0;
 U16 taskCTR_40msec = 0;
-U16 taskCTR_100msec = 0;
-U16 taskCTR_500msec = 0;
 U16 taskCTR_1000msec = 0;
-struct CAR car;
+
+
+U8 breakLearn = 0;
+U8 apexEntry = 0;
+S16 apexEntryIn=0;
+S16 apexExitDown=0;
+
 const struct CAR_CAL cal = 
 {
 /*
@@ -73,56 +65,12 @@ const struct CAR_CAL cal =
 	35,20,60,8,140
 };
 
-U8 breakLearn = 0;
-U8 apexEntry = 0;
-S16 apexEntryIn=0;
-S16 apexExitDown=0;
-    uint32_t Pit1Ctr = 0;   /* Counter for PIT 1 interrupts */
-    uint32_t SWirq4Ctr = 0;	/* Counter for software interrupt 4 */
 
 //**function Prototypes*//
 
-#define FLASH_CONFIG_DATA 0x1084126F /* MPC56xxS flash config value for 64 MHz */
-#define FLASH_CONFIG_REG CFLASH.PFCR0.R /* Flash config. register address */
-#define FLASH_ACCESS_PROT_DATA 0x03F2005D /* MPC56xxS flash access prot. value */
-#define FLASH_ACCESS_PROT_REG CFLASH.FAPR.R /* Flash Access Prot. Reg. address */
-asm void enable_accel_BTB(void) {
-li r0, 0 /* Enable branch acceleration (HID[PBRED]=0) */
-mtHID0 r0
-li r0, 0x0201 /* Invalidate Branch Target Buffers and enable them */
-mtBUCSR r0
-}
 
 int main(void) 
 {
-	volatile int i = 0;
-	char option = 0;
-	
-	
-	/* NOTE: Structures are default aligned on a boundary which is a multiple of */
-/* the largest sized element, 4 bytes in this case. The first two */
-/* instructions are 4 bytes, so the last instruction is duplicated to */
-/* avoid the compiler adding padding of 2 bytes before the instruction. */
-uint32_t mem_write_code_vle [] = {
-0x54640000, /* e_stw r3,(0)r4 machine code: writes r3 contents to addr in r4 */
-0x7C0006AC, /* mbar machine code: ensure prior store completed */
-0x00040004 /* 2 se_blr's machine code: branches to return address in link reg.*/
-};
-typedef void (*mem_write_code_ptr_t)(uint32_t, uint32_t);
-/* create a new type def: a func pointer called mem_write_code_ptr_t */
-/* which does not return a value (void) */
-/* and will pass two 32 bit unsigned integer values */
-/* (per EABI, the first parameter will be in r3, the second r4) */
-(*((mem_write_code_ptr_t)mem_write_code_vle)) /* cast mem_write_code as func ptr*/
-/* * de-references func ptr, i.e. converts to func*/
-(FLASH_CONFIG_DATA, /* which passes integer (in r3) */
-(uint32_t)&FLASH_CONFIG_REG); /* and address to write integer (in r4) */
-(*((mem_write_code_ptr_t)mem_write_code_vle)) /* cast mem_write_code as func ptr*/
-/* * de-references func ptr, i.e. converts to func*/
-(FLASH_ACCESS_PROT_DATA, /* which passes integer (in r3) */
-(uint32_t)&FLASH_ACCESS_PROT_REG); /* and address to write integer (in r4) */
-enable_accel_BTB(); /* Enable branch accel., branch target buffers */
-
 	car.ctrl.biasVelocity = constBiasCenter;
 	car.ctrl.targetServoPos = 0;
 	car.ctrl.targetVelocity = 0;
@@ -152,141 +100,134 @@ enable_accel_BTB(); /* Enable branch accel., branch target buffers */
   setupBiasTable(); // sets lookup for differental neutral map
 
 
-  for (;;) {
+  for (;;) 
+  {
   }
 
-}
-
-
-
-void task_2msec()
-{
-
-
-	taskCTR_2msec=0;
 }
 
 void taskPIDupdate()
 {	
 	if(car.ctrl.manualMode==2)	//auto pilot Mode ==2
 		{	
-		//set the steering position, iTerm
-					
-		car.ctrl.iTerm += (float)car.ctrl.error * car.iGain;
-			
-		//Limit the iTerm
-		if(car.ctrl.iTerm > cal.servGainIgainLimit)
-			car.ctrl.iTerm = cal.servGainIgainLimit;
-		else if(car.ctrl.iTerm < -cal.servGainIgainLimit)
-			car.ctrl.iTerm = -cal.servGainIgainLimit;
-			
-		
-		if(apexExitDown<180)
-			car.ctrl.dterm = (car.sensor.c2 - car.sensor.center) * car.dGain;
-		else
-			car.ctrl.dterm = 0;
-		
-			
-		//set the position, P, and I term only here
-		car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm + car.ctrl.dterm);
-				
-		//limit servo position
-		if(car.ctrl.targetServoPos<-constServoMax)
-			car.ctrl.targetServoPos = -constServoMax;
-		else if(car.ctrl.targetServoPos>constServoMax)
-			car.ctrl.targetServoPos = constServoMax;
-			
-		//straightLearning
-		if((car.ctrl.targetServoPos > -20) && car.ctrl.targetServoPos < 20) //if steering is somewhat straight
-			{
-			if(car.ctrl.straightLearn < cal.maxLearn )
-				car.ctrl.straightLearn += 1;
-			else
-				car.ctrl.straightLearn = cal.maxLearn;	
-			}
-		else
-			{
-			if(car.ctrl.straightLearn >15) // can learn down to null in 0.11 seconds
-				car.ctrl.straightLearn -= 15;
-			else
-				car.ctrl.straightLearn = 0;
-				
-			if(car.ctrl.straightLearn >100)
-				breakLearn = 5;
-			}
-			
-			//apex set
-		if((car.ctrl.targetServoPos>200) && apexExitDown == 0)
-			{
-			apexEntryIn = 100;
-			apexExitDown = 100;
-			apexEntry = 1;
-			}
-		else if((car.ctrl.targetServoPos<-200) && apexExitDown == 0)
-			{
-			apexEntryIn = 100;
-			apexExitDown = 100;
-			apexEntry = 0;
-			}
-			
-		//set the control center Apex seeking portion
-		if(apexEntryIn>0)
-			{
-			if(apexEntry==1)
-				car.ctrl.controlCenter = (U8)((S16)64 + (S16)((100-apexEntryIn) * (S16)cal.apexModError / 128));
-			else
-				car.ctrl.controlCenter = (U8)((S16)64 - (S16)((100-apexEntryIn) * (S16)cal.apexModError / 128));
-			apexEntryIn--;
-			}
-		else if(apexExitDown>0)
-			{
-			if(apexEntry==1)
-				car.ctrl.controlCenter = (U8)((S16)64 + (S16)(apexExitDown * (S16)cal.apexModError / 128));
-			else
-				car.ctrl.controlCenter = (U8)((S16)64 - (S16)(apexExitDown * (S16)cal.apexModError / 128));
-			apexExitDown--;
-			}
-		else
-			car.ctrl.controlCenter = (U8)(64);
-		
-		if(car.sensor.valid >=1) //sensor has a valid read
-			{
-			//set the target open loop velocity
-			car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn*3;
-			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos, car.ctrl.straightLearn );
-			}
-		else
-			{
-			car.ctrl.targetVelocity = cal.lostSpeed;			
-			car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos,car.ctrl.straightLearn);	
-			}		
-		
+		setPIDLoop();
+		setStraightLearn();		
+		setApexTargeting();
+		setSpeedTargets();		
 		}
 	else if(car.ctrl.manualMode==0) // manual Mode
 		{
 		SIU.PGPDO[0].R = 0x00000000;
-		car.ctrl.targetVelocity = 0;	
-		car.ctrl.biasVelocity = constBiasCenter;	
 							
-		car.ctrl.iTerm += (float)car.ctrl.error * car.iGain;
-			
-		//Limit the iTerm
-		if(car.ctrl.iTerm > cal.servGainIgainLimit)
-			car.ctrl.iTerm = cal.servGainIgainLimit;
-		else if(car.ctrl.iTerm < -cal.servGainIgainLimit)
-			car.ctrl.iTerm = -cal.servGainIgainLimit;
-		
-		car.ctrl.targetServoPos = (S16)(float)car.ctrl.error*car.pGain;
-		
-		//set the position, P, and I term only here
-		if(car.ctrl.targetServoPos<-constServoMax)
-			car.ctrl.targetServoPos = -constServoMax;
-		else if(car.ctrl.targetServoPos>constServoMax)
-			car.ctrl.targetServoPos = constServoMax;
-			
+		setPIDLoop();
 		car.ctrl.controlCenter = 64;
-	
+		car.ctrl.targetVelocity = 0;	
+		car.ctrl.biasVelocity = constBiasCenter;		
 		}			   
+}
+
+void setPIDLoop()
+{
+	//set the steering position, iTerm
+				
+	car.ctrl.iTerm += (float)car.ctrl.error * car.iGain;
+		
+	//Limit the iTerm
+	if(car.ctrl.iTerm > cal.servGainIgainLimit)
+		car.ctrl.iTerm = cal.servGainIgainLimit;
+	else if(car.ctrl.iTerm < -cal.servGainIgainLimit)
+		car.ctrl.iTerm = -cal.servGainIgainLimit;
+		
+	
+	if(apexExitDown<180)
+		car.ctrl.dterm = (car.sensor.c2 - car.sensor.center) * car.dGain;
+	else
+		car.ctrl.dterm = 0;
+	
+		
+	//set the position, P, and I term only here
+	car.ctrl.targetServoPos = (S16)((float)car.ctrl.error*car.pGain + car.ctrl.iTerm + car.ctrl.dterm);
+			
+	//limit servo position
+	if(car.ctrl.targetServoPos<-constServoMax)
+		car.ctrl.targetServoPos = -constServoMax;
+	else if(car.ctrl.targetServoPos>constServoMax)
+		car.ctrl.targetServoPos = constServoMax;
+		
+}
+
+void setStraightLearn()
+{
+	//straightLearning
+	if((car.sensor.valid == camCenter) && (car.ctrl.targetServoPos > -50) && car.ctrl.targetServoPos < 50) //if steering is somewhat straight
+		{
+		if(car.ctrl.straightLearn < cal.maxLearn )
+			car.ctrl.straightLearn += 1;
+		else
+			car.ctrl.straightLearn = cal.maxLearn;	
+		}
+	else
+		{
+		if(car.ctrl.straightLearn >15) // can learn down to null in 0.11 seconds
+			car.ctrl.straightLearn -= 15;
+		else
+			car.ctrl.straightLearn = 0;
+			
+		if(car.ctrl.straightLearn >100)
+			breakLearn = 5;
+		}
+}
+
+void setApexTargeting(void)
+{
+	//apex set
+	if((car.ctrl.targetServoPos>200) && apexExitDown == 0)
+		{
+		apexEntryIn = 100;
+		apexExitDown = 100;
+		apexEntry = 1;
+		}
+	else if((car.ctrl.targetServoPos<-200) && apexExitDown == 0)
+		{
+		apexEntryIn = 100;
+		apexExitDown = 100;
+		apexEntry = 0;
+	}
+
+	//set the control center Apex seeking portion
+	if(apexEntryIn>0)
+		{
+		if(apexEntry==1)
+			car.ctrl.controlCenter = (U8)((S16)64 + (S16)((100-apexEntryIn) * (S16)cal.apexModError / 128));
+		else
+			car.ctrl.controlCenter = (U8)((S16)64 - (S16)((100-apexEntryIn) * (S16)cal.apexModError / 128));
+		apexEntryIn--;
+	}
+	else if(apexExitDown>0)
+		{
+		if(apexEntry==1)
+			car.ctrl.controlCenter = (U8)((S16)64 + (S16)(apexExitDown * (S16)cal.apexModError / 128));
+		else
+			car.ctrl.controlCenter = (U8)((S16)64 - (S16)(apexExitDown * (S16)cal.apexModError / 128));
+		apexExitDown--;
+		}
+	else
+		car.ctrl.controlCenter = (U8)(64);
+}
+
+void setSpeedTargets(void)
+{
+	if(car.sensor.valid >=1) //sensor has a valid read
+		{
+		//set the target open loop velocity
+		car.ctrl.targetVelocity = (U16)car.speedGain + (U16)car.ctrl.straightLearn*3;
+		car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos, car.ctrl.straightLearn );
+		}
+	else
+		{
+		car.ctrl.targetVelocity = cal.lostSpeed;			
+		car.ctrl.biasVelocity	= lookupBiasVel(car.ctrl.targetServoPos,car.ctrl.straightLearn);	
+		}			
 }
 
 void task_5msec()
@@ -312,6 +253,7 @@ void task_5msec()
 		motLeft = ((U32)car.ctrl.velTarget * (U32)car.ctrl.biasVelocity)/constBiasCenter;
 		motRight = ((U32)car.ctrl.velTarget * 500)/constBiasCenter;	
 		}
+	
 	if(breakLearn>0)
 		{
 		if(car.ctrl.targetServoPos>100)
@@ -506,6 +448,7 @@ void task_1000msec()
 
 void Delay(void)
 {
+U8 dly;
   for(dly=0;dly<40;dly++)
   {  	
   };
@@ -516,9 +459,7 @@ void Delay(void)
 
 void Pit1ISR(void) 
 {
-	Pit1Ctr++;              /* Increment interrupt counter */
-  
- 	if(taskCTR_5msec++>=10) task_5msec();
+	if(taskCTR_5msec++>=10) task_5msec();
 	if(taskCTR_10msec++>=20) task_10msec();	
 	if(taskCTR_20msec++>=40) task_20msec();
 	if(taskCTR_40msec++>=80) task_40msec();

@@ -7,6 +7,7 @@ void initMainHardware(void);
 void initPads (void);
 void initADC(void);
 void initSBC (void);
+void initBTB(void);
 
 
 

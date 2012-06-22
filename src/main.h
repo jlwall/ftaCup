@@ -16,6 +16,11 @@ void task_40msec(void);
 void task_1000msec(void);
 void taskPIDupdate(void);
 
+void setPIDLoop(void);
+void setStraightLearn(void);
+void setApexTargeting(void);
+void setSpeedTargets(void);
+
 void Pit1ISR(void);
 void Pit2ISR(void);
 void setupBiasTable(void);
