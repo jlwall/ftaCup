@@ -12,3 +12,6 @@ void RIGHT_MOTOR_CURRENT(void);
 void MOTOR_LEFT(void);
 void MOTOR_RIGHT(void);
 void TRIM_POT_ADC(void);
+
+//CAN log offload
+void SendDataLog(U16 chunk);

@@ -4,6 +4,7 @@
 
 
 extern struct CAR car;
+extern struct LogStruct loger;
 
 U8 rx_data[4],pt;
 
@@ -117,6 +118,17 @@ U8 ReadData (void)
 	LINFLEX_0.UARTSR.R = 0x0204;
 	
 	return ch;
+	
+}
+
+void SendDataLog(U16 chunk) //Host asked for 6 bytes of Data, send the frame
+{
+	U16 dataStore[4];
+	
+	*(U16*)&dataStore = chunk; // store the address portion
+	
+	memcpy(&dataStore[1],((&loger) + chunk*6),6); // store 6 bytes of log		
+	TransmitMsgRef((U8*)&dataStore,8,16,0x540); //transmit the Message
 	
 }
 

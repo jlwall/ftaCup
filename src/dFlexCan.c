@@ -71,20 +71,6 @@ void initCAN_0 (void) {
   CAN_0.MCR.R = 0x0000003F;       /* Negate FlexCAN 0 halt state for 64 MB */
 }
 
-void TransmitMsg (void) {
-  uint8_t	i;
-                                   /* Assumption:  Message buffer CODE is INACTIVE */
-  const uint8_t TxData[] = {"Hello"};  /* Transmit string*/
-  CAN_0.BUF[0].CS.B.IDE = 0;           /* Use standard ID length */
-  CAN_0.BUF[0].ID.B.STD_ID = 555;      /* Transmit ID is 555 */
-  CAN_0.BUF[0].CS.B.RTR = 0;           /* Data frame, not remote Tx request frame */
-  CAN_0.BUF[0].CS.B.LENGTH = sizeof(TxData) -1 ; /* # bytes to transmit w/o null */
-  for (i=0; i<sizeof(TxData); i++) {
-    CAN_0.BUF[0].DATA.B[i] = TxData[i];      /* Data to be transmitted */
-  }
-  CAN_0.BUF[0].CS.B.SRR = 1;           /* Tx frame (not req'd for standard frame)*/
-  CAN_0.BUF[0].CS.B.CODE =0xC;         /* Activate msg. buf. to transmit data frame */ 
-}
 
 uint8_t RecieveMsgB0 ( uint8_t buffer) {
   uint8_t j;
