@@ -6,7 +6,7 @@ void initMainHardware(void);
 
 void initPads (void);
 void initADC(void);
-void initCTU(void);
+void initSBC (void);
 
 
 

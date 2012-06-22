@@ -16,20 +16,18 @@ extern const vuint32_t IntcIsrVectorTable[];
 
 void initMainHardware(void)
 {	
-//U16 temp;
 	disableIrq();		   	/* Ensure INTC current prority=0 & enable IRQ */
 
 
-	//initCTU();
-
 	initModesAndClock();
 	initPeriClkGen() ;
-		initPads ();
+	initPads ();
 	disableWatchdog();
 	init_LinFLEX_0_UART ();
-	//initCAN_1();             /* Initialize FLEXCAN 0*/
+	initCAN_1();             /* Initialize FLEXCAN 0*/
+	initSBC();  //init SBC for CAN
 	
-		initADC();
+	initADC();
 
 	initINTC();			/* Initialize INTC for software vector mode */
 	initPIT();		  	/* Initialize PIT1 for 1KHz IRQ, priority 2 */
@@ -41,7 +39,7 @@ void initMainHardware(void)
 	SIU.PSMI[9].R = 3;  //dspi1_sscl=114
 
 
-EMIOS_0.MCR.B.GPRE= 63;   			/* Divide 64 MHz sysclk by 63+1 = 64 for 1MHz eMIOS clk*/
+	EMIOS_0.MCR.B.GPRE= 63;   			/* Divide 64 MHz sysclk by 63+1 = 64 for 1MHz eMIOS clk*/
 	EMIOS_0.MCR.B.GPREN = 1;			/* Enable eMIOS clock */
 	EMIOS_0.MCR.B.GTBE = 1;  			/* Enable global time base */
 	EMIOS_0.MCR.B.FRZ = 1;    			/* Enable stopping channels when in debug mode */
@@ -91,57 +89,54 @@ EMIOS_0.MCR.B.GPRE= 63;   			/* Divide 64 MHz sysclk by 63+1 = 64 for 1MHz eMIOS
     SIU.PCR[17].R = 0x0200;				/* Program the drive enable pin of Right Motor as output*/
 	SIU.PCR[16].R = 0x0200;				/* Program the drive enable pin of Left Motor as output*/
 	SIU.PGPDO[0].R = 0x00000000;		/* Disable the motors */
-	
-	
-	
+		
+	INTC.CPR.B.PRI = 0;          /* Single Core: Lower INTC's current priority */
+  	asm(" wrteei 1");	    	   /* Enable external interrupts */	
+}
+
+void initSBC (void)
+{
+	U16 temp;
 	//init SBC for CAN
-	//DSPI_1.MCR.R = 0x80010001; /* Configure DSPI_0 as master */
-//DSPI_1.CTAR[0].R = 0x780A7727; /* Configure CTAR0 */
-//DSPI_1.MCR.B.HALT = 0x0; /* Exit HALT mode: go from STOPPED to RUNNING state*/
+	DSPI_1.MCR.R = 0x80010001; /* Configure DSPI_0 as master */
+	DSPI_1.CTAR[0].R = 0x780A7727; /* Configure CTAR0 */
+	DSPI_1.MCR.B.HALT = 0x0; /* Exit HALT mode: go from STOPPED to RUNNING state*/
 
 
-//DSPI_1.PUSHR.R = 0x08011D00; /* Transmit data from master to slave SPI with EOQ */
-//while(DSPI_1.SR.B.EOQF==0)
-//{
-	
-//};
-//DSPI_1.SR.B.EOQF=1;
+	DSPI_1.PUSHR.R = 0x08011D00; /* Transmit data from master to slave SPI with EOQ */
+	while(DSPI_1.SR.B.EOQF==0)
+	{
+	};
+	DSPI_1.SR.B.EOQF=1;
 
 
-//temp = (U16)DSPI_1.POPR.R;
-
-
-
-//DSPI_1.PUSHR.R = 0x080160C1; /* Transmit data from master to slave SPI with EOQ */
-//while(DSPI_1.SR.B.EOQF==0)
-//{
-	
-//};
-//DSPI_1.SR.B.EOQF=1;
+	temp = (U16)DSPI_1.POPR.R;
 
 
 
-//DSPI_1.PUSHR.R = 0x080140C0; /* Transmit data from master to slave SPI with EOQ */
-//while(DSPI_1.SR.B.EOQF==0)
-//{
-	
-//};
-//DSPI_1.SR.B.EOQF=1;
+	DSPI_1.PUSHR.R = 0x080160C1; /* Transmit data from master to slave SPI with EOQ */
+	while(DSPI_1.SR.B.EOQF==0)
+	{
+	};
+	DSPI_1.SR.B.EOQF=1;
 
 
-//temp = (U16)DSPI_1.POPR.R;
+
+	DSPI_1.PUSHR.R = 0x080140C0; /* Transmit data from master to slave SPI with EOQ */
+	while(DSPI_1.SR.B.EOQF==0)
+	{
+	};
+	DSPI_1.SR.B.EOQF=1;
 
 
-//DSPI_1.PUSHR.R = 0x08015E18; /* Transmit data from master to slave SPI with EOQ */
-//while(DSPI_1.SR.B.EOQF==0)
-//{
-	
-//};
-//DSPI_1.SR.B.EOQF=1;
-	
-	
-INTC.CPR.B.PRI = 0;          /* Single Core: Lower INTC's current priority */
-  asm(" wrteei 1");	    	   /* Enable external interrupts */
+	temp = (U16)DSPI_1.POPR.R;
+
+
+	DSPI_1.PUSHR.R = 0x08015E18; /* Transmit data from master to slave SPI with EOQ */
+	while(DSPI_1.SR.B.EOQF==0)
+	{
+	};
+	DSPI_1.SR.B.EOQF=1;
 	
 }
 
@@ -189,12 +184,6 @@ void initADC(void) {
     
 }
 
-void initCTU(void) {
-  //	CTU.EVTCFGR[2].R = 0x00008000;  	 /* Config event on eMIOS Ch 2 to trig ANP[0] */
-}
-
-
-
 
 void initModesAndClock(void) {
 	ME.MER.R = 0x0000001D;          	/* Enable DRUN, RUN0, SAFE, RESET modes */
@@ -213,7 +202,7 @@ void initModesAndClock(void) {
 	//ME.PCTL[4].R = 0x01; /* MPC56xxB/P/S DSPI0: select ME.RUNPC[1] */
 	//ME.PCTL[5].R = 0x01; /* MPC56xxB/P/S DSPI1: select ME.RUNPC[1] */
 	//ME.PCTL[16].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
-	//ME.PCTL[17].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
+	ME.PCTL[17].R = 0x01;           	/* MPC56xxB/P/S FlexCAN0: select ME.RUNPC[1] */	
 	ME.PCTL[32].R = 0x01;       		/* MPC56xxB ADC 0: select ME.RUNPC[1] */
   	//ME.PCTL[57].R = 0x01;       		/* MPC56xxB CTUL: select ME.RUNPC[1] */
   	ME.PCTL[48].R = 0x01;           	/* MPC56xxB/P/S LINFlex 0: select ME.RUNPC[1] */
