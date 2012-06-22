@@ -1,16 +1,16 @@
 #include "MPC5604B_M07N.h"
 
-uint32_t  RxCODE;              /* Received message buffer code */
-uint32_t RxID;                 /* Received message ID */
-uint32_t  RxLENGTH;            /* Recieved message number of data bytes */
-uint8_t  RxDATA[8];            /* Received message data string*/
-uint32_t RxTIMESTAMP;          /* Received message time */                         
+U32  RxCODE;              /* Received message buffer code */
+U32 RxID;                 /* Received message ID */
+U32  RxLENGTH;            /* Recieved message number of data bytes */
+U8  RxDATA[8];            /* Received message data string*/
+U32 RxTIMESTAMP;          /* Received message time */                         
 
 void initCAN_1 (void) {
-    uint8_t   i;
+    U8   i;
 
   CAN_1.MCR.R = 0x5000003F;       /* Put in Freeze Mode & enable all 64 msg bufs */
-  CAN_1.CR.R = 0x04DB0006;        /* Configure for 8MHz OSC, 100KHz bit time */
+  CAN_1.CR.R = 0x04DB0006;        /* Configure for 8MHz OSCS16 100KHz bit time */
   for (i=0; i<64; i++) {
     CAN_1.BUF[i].CS.B.CODE = 0;   /* Inactivate all message buffers */
   } 
@@ -18,13 +18,13 @@ void initCAN_1 (void) {
   CAN_1.BUF[0].CS.B.CODE = 8;     /* Message Buffer 0 set to TX INACTIVE */
   
   
-  SIU.PCR[42].R = 0x0624;         /* MPC56xxB: Config port B0 as CAN0TX, open drain */
+  SIU.PCR[42].R = 0x0624;         /* MPC56xxB: Config port B0 as CAN0TXS16 open drain */
   SIU.PCR[43].R = 0x0100;         /* MPC56xxB: Configure port B1 as CAN0RX */
   
   CAN_1.MCR.R = 0x0000003F;       /* Negate FlexCAN 0 halt state for 64 MB */
 }
 
-uint8_t canBufferSetupRx(uint8_t ide, uint16_t msgId, uint8_t busSel, uint8_t buffer)
+U8 canBufferSetupRx(U8 irq, U16 msgId, U8 busSel, U8 buffer)
 {
 	if(buffer>64)
 		return 0;
@@ -40,13 +40,13 @@ uint8_t canBufferSetupRx(uint8_t ide, uint16_t msgId, uint8_t busSel, uint8_t bu
 	
 	if(busSel==0)
 	{
-	CAN_0.BUF[buffer].CS.B.IDE = ide;      /* MB 4 will look for a standard ID */
+	CAN_0.BUF[buffer].CS.B.IDE = 0;      /* MB 4 will look for a standard ID */
   	CAN_0.BUF[buffer].ID.B.STD_ID = msgId; /* MB 4 will look for ID = 555 */
   	CAN_0.BUF[buffer].CS.B.CODE = 4;     /* MB 4 set to RX EMPTY */	  
 	}
 	else
 	{	
-	CAN_1.BUF[buffer].CS.B.IDE = ide;      /* MB 4 will look for a standard ID */
+	CAN_1.BUF[buffer].CS.B.IDE = 0;      /* MB 4 will look for a standard ID */
   	CAN_1.BUF[buffer].ID.B.STD_ID = msgId; /* MB 4 will look for ID = 555 */
   	CAN_1.BUF[buffer].CS.B.CODE = 4;     /* MB 4 set to RX EMPTY */
 	}
@@ -54,10 +54,10 @@ uint8_t canBufferSetupRx(uint8_t ide, uint16_t msgId, uint8_t busSel, uint8_t bu
 }
 
 void initCAN_0 (void) {
-  uint8_t   i;
+  U8   i;
 
   CAN_0.MCR.R = 0x5000003F;       /* Put in Freeze Mode & enable all 64 msg bufs */
-  CAN_0.CR.R = 0x04DB0006;        /* Configure for 8MHz OSC, 100KHz bit time */
+  CAN_0.CR.R = 0x04DB0006;        /* Configure for 8MHz OSCS16 100KHz bit time */
   for (i=0; i<64; i++) {
     CAN_0.BUF[i].CS.B.CODE = 0;   /* Inactivate all message buffers */
   } 
@@ -65,20 +65,20 @@ void initCAN_0 (void) {
   CAN_0.BUF[0].CS.B.CODE = 8;     /* Message Buffer 0 set to TX INACTIVE */
   
   
-  SIU.PCR[42].R = 0x0624;         /* MPC56xxB: Config port B0 as CAN0TX, open drain */
+  SIU.PCR[42].R = 0x0624;         /* MPC56xxB: Config port B0 as CAN0TXS16 open drain */
   SIU.PCR[43].R = 0x0100;         /* MPC56xxB: Configure port B1 as CAN0RX */
   
   CAN_0.MCR.R = 0x0000003F;       /* Negate FlexCAN 0 halt state for 64 MB */
 }
 
 
-uint8_t RecieveMsgB0 ( uint8_t buffer) {
-  uint8_t j;
-  uint32_t dummy;
+U8 RecieveMsgB0 ( U8 buffer) {
+  U8 j;
+  U32 dummy;
 
-  if(CAN_0.IFRL.B.BUF04I == 1)
+  if(CAN_0.IFRL.R == 1<<buffer)
   {
-	  RxCODE   = CAN_0.BUF[buffer].CS.B.CODE;    /* Read CODE, ID, LENGTH, DATA, TIMESTAMP */
+	  RxCODE   = CAN_0.BUF[buffer].CS.B.CODE;    /* Read CODES16 IDS16 LENGTHS16 DATAS16 TIMESTAMP */
 	  RxID     = CAN_0.BUF[buffer].ID.B.STD_ID;
 	  RxLENGTH = CAN_0.BUF[buffer].CS.B.LENGTH;
 	  for (j=0; j<RxLENGTH; j++) { 
@@ -86,20 +86,20 @@ uint8_t RecieveMsgB0 ( uint8_t buffer) {
 	  }
 	  RxTIMESTAMP = CAN_0.BUF[buffer].CS.B.TIMESTAMP; 
 	  dummy = CAN_0.TIMER.R;                /* Read TIMER to unlock message buffers */    
-	  CAN_0.IFRL.R = 0x00000010;            /* Clear CAN 1 MB 4 flag */
+	  CAN_0.IFRL.R = 1<<buffer;            /* Clear CAN 1 MB 4 flag */
 	  return 1;
   }
   else
   return 0;
 }
 
-uint8_t RecieveMsgB1 ( uint8_t buffer) {
-  uint8_t j;
-  uint32_t dummy;
+U8 RecieveMsgB1 ( U8 buffer) {
+  U8 j;
+  U32 dummy;
 
-  if(CAN_1.IFRL.B.BUF04I == 1)
+  if(CAN_1.IFRL.R == 1<<buffer)
   {
-	  RxCODE   = CAN_1.BUF[buffer].CS.B.CODE;    /* Read CODE, ID, LENGTH, DATA, TIMESTAMP */
+	  RxCODE   = CAN_1.BUF[buffer].CS.B.CODE;    /* Read CODES16 IDS16 LENGTHS16 DATAS16 TIMESTAMP */
 	  RxID     = CAN_1.BUF[buffer].ID.B.STD_ID;
 	  RxLENGTH = CAN_1.BUF[buffer].CS.B.LENGTH;
 	  for (j=0; j<RxLENGTH; j++) { 
@@ -107,7 +107,7 @@ uint8_t RecieveMsgB1 ( uint8_t buffer) {
 	  }
 	  RxTIMESTAMP = CAN_1.BUF[buffer].CS.B.TIMESTAMP; 
 	  dummy = CAN_1.TIMER.R;                /* Read TIMER to unlock message buffers */    
-	  CAN_1.IFRL.R = 0x00000010;            /* Clear CAN 1 MB 4 flag */
+	  CAN_1.IFRL.R = 1<<buffer;            /* Clear CAN 1 MB 4 flag */
 	  return 1;
   }
   else
@@ -116,11 +116,11 @@ uint8_t RecieveMsgB1 ( uint8_t buffer) {
 
 void TransmitMsgRef (U8* data, U8 dlc, U8 buff, U16 txId)
  {
-  uint8_t	i;
+  U8	i;
                                
   CAN_1.BUF[buff].CS.B.IDE = 0;           /* Use standard ID length */
   CAN_1.BUF[buff].ID.B.STD_ID = txId;      /* Transmit ID is 555 */
-  CAN_1.BUF[buff].CS.B.RTR = 0;           /* Data frame, not remote Tx request frame */
+  CAN_1.BUF[buff].CS.B.RTR = 0;           /* Data frameS16 not remote Tx request frame */
   CAN_1.BUF[buff].CS.B.LENGTH = dlc -1 ; /* # bytes to transmit w/o null */
   for (i=0; i<dlc; i++) {
     CAN_1.BUF[buff].DATA.B[i] = *data++;      /* Data to be transmitted */
