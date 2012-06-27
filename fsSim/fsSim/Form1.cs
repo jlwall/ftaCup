@@ -110,9 +110,6 @@ namespace fsSim
             car.lightSense.width = 70;
 
             car.ctrl = new carControl();
-
-                 
-                 
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -123,7 +120,7 @@ namespace fsSim
 
         }
 
-        Boolean[,] trackGrid = new Boolean[10000, 6000];
+        Boolean[,] trackGrid = new Boolean[10000, 9000];
 
         public void setupTrack()
         {
@@ -132,7 +129,8 @@ namespace fsSim
                 for(int j=0;j<trackGrid.GetLength(1);j++)
                     trackGrid[i,j]=false;
 
-
+            //Base Track
+            /*
             trackInsertLine(200, 1000, true, false, false, 2000);
             trackInsertLine(50, 2000, false, true, false, 300); //sf Line
             trackInsetCurve(700, 3000, 500, 25, -Math.PI*12/8, Math.PI/2 );
@@ -146,8 +144,62 @@ namespace fsSim
             trackInsetCurve(3450, 3450, 3000, 25, -Math.PI * 14 / 24, Math.PI/12);
             trackInsetCurve(2280, -2415, 3000, 25, Math.PI * 11 / 24, Math.PI / 12);
             trackInsertLine(1900, 550, false, true, true, 1250);
-            trackInsetCurve(700, 1050, 500, 25, Math.PI, Math.PI / 2);
+            trackInsetCurve(700, 1050, 500, 25, Math.PI, Math.PI / 2);*
+             */
 
+            trackInsertLine(500, 1000, true, false, false, 1064); //SF
+
+            //sf line
+
+            trackInsertLine(400, 1500, false, true, false, 50); //SF
+            trackInsertLine(600, 1500, false, true, true, 50); //SF
+
+            trackInsetCurve(500 + 532, 500 + 532, 532, 26, Math.PI, Math.PI / 2); // Turn 1
+            trackInsertLine(1000, 500, false, true, false, 1064*6); // Straight 1;
+            trackInsetCurve(1000 + 1064 * 6, 500 + 532, 532, 26, -Math.PI / 2, Math.PI / 2); // Turn 2
+            trackInsertLine(1000 + 1064 * 6 + 532, 1000, true, false, false, 1064); //straight 2
+            //hill 1
+            trackInsertLine(1000 + 1064 * 6 + 532, 1000 + 1064 , true, false, false, 1064*2); //straight 2
+            //hill2
+            trackInsertLine(1000 + 1064 * 6 + 532, 1000 + 1064 * 3, true, false, false, 1064*2); //straight 2
+            trackInsetCurve(1000 + 1064 * 6, 1000 + 1064 * 5, 532, 26, 0 , Math.PI); // HP 3/4
+            //swivels, straight 3
+            trackInsertLine(1000 + 1064 * 6 - 532, 1000 + 1064 * 5, true, false, true, 1064*4); //straight 3
+
+            trackInsetCurve(1000 + 1064 * 6 - 532*2, 1000 + 1064, 532, 26, -Math.PI/2, Math.PI/2); // Turn 5
+
+            trackInsertLine(1000 + 1064 * 6 - 532*2, 1000 + 1064-532 , false, true, true, 1064 * 3); //straight 4
+
+            trackInsetCurve(1000 + 1064 * 3 - 532 * 2, 1000 + 1064, 532, 26, -Math.PI , Math.PI / 2); // Turn 6
+
+            
+            trackInsertLine(1000 + 1064 * 3 - 532 * 3, 1000 + 1064, true, false, false, 1064); //straight 5
+
+            trackInsetCurve(1000 + 1064 * 3 - 532 * 2, 1000 + 1064*2, 532, 26, Math.PI/2, Math.PI / 2); // Turn 7
+
+            //cross 1
+            trackInsertLine(1000 + 1064 * 3 - 532 * 2, 1000 + 1064*2 + 532, false, true, false, 1064); //straight 5
+
+            //loop 1
+            trackInsetCurve(1000 + 1064 * 4 - 532 * 2, 1000 + 1064 * 2, 532, 26, Math.PI, 3*Math.PI / 2); // Turn 7
+
+            //cross 2
+            trackInsertLine(1000 + 1064 * 4 - 532 * 3, 1000 + 1064 * 2, true, false, false, 1064 * 3); //straight 5
+
+            //loop 2
+            trackInsetCurve(1000 + 1064 * 4 - 532 * 2, 1000 + 1064 * 5, 532, 26, -Math.PI/2, 3 * Math.PI / 2); // Turn 7
+
+            //cross 2
+            trackInsertLine(1000 + 1064 * 4 - 532 * 2, 1000 + 1064 * 5 - 532, false, true, true, 1064*2); //straight 5
+
+            trackInsetCurve(1032 + 1064 * 2 - 532 * 2, 1000 + 1064 * 5, 532, 26, Math.PI, Math.PI / 2); // Turn 5
+
+            trackInsetCurve(1032 + 1064 * 2 - 532 * 4 , 1000 + 1064 * 5 , 532, 26, 0, Math.PI); // Turn 5
+
+            //cross 2
+            trackInsertLine(500 , 1000 + 1064 * 5 , true, false, true, 1064 * 4); //straight 5
+
+         
         }
 
         class carPos
@@ -237,7 +289,7 @@ namespace fsSim
 
         private void renderTrack()
         {
-            Bitmap bm = new Bitmap(1000, 600);
+            Bitmap bm = new Bitmap(1000, 900);
 
             for (int i = 0; i < bm.Width; i++)
                 for (int j = 0; j < bm.Height; j++)
@@ -256,14 +308,19 @@ namespace fsSim
 
                 if (px >= bm.Width) px = bm.Width - 1;
 
-                if (px < 0) px = 0;
-                if (py < 0) py = 0;
+                if (px < 0) px = 1;
+                if (py < 0) py = 1;
 
                 //    py = bm.Height - py;
                 int spedc = (int)(c.speed / 20);
                 if (spedc > 255) spedc = 255;
                 if (spedc < 0) spedc = 0;
-                bm.SetPixel(px, py, Color.FromArgb(255, 255 - spedc, spedc, 0));
+                bm.SetPixel(px, py, Color.FromArgb(255,spedc, spedc, 0));
+
+                bm.SetPixel(px + 1, py + 1, Color.Green);
+                bm.SetPixel(px + 1, py - 1, Color.Green);
+                bm.SetPixel(px - 1, py + 1, Color.Green);
+                bm.SetPixel(px - 1, py - 1, Color.Green);
 
             }
 
@@ -291,7 +348,7 @@ namespace fsSim
             if (y < 0.1) y = 0.1;
 
             if (x > 9998) x = 9998;
-            if (y > 5998) y = 5998;
+            if (y > 8998) y = 8998;
 
             int x0 = (int)Math.Round(x,0);
             int x1 = x0 + 1; 
@@ -321,7 +378,7 @@ namespace fsSim
             if (y < 5) y = 5;
 
             if (x > 9994) x = 9994;
-            if (y > 5994) y = 5994;
+            if (y > 8994) y = 8994;
 
             for(int i=x-5;i<5+x;i++)
                 for (int j = y-5; j < 5+y; j++)
@@ -452,9 +509,9 @@ namespace fsSim
             if ((car.lightSense.senseWide > 12) && (car.lightSense.senseWide < 40))
             {
                 car.lightSense.valid = 1;
-                Random r = new Random();
+               // Random r = new Random();
 
-                Double rr = 0;// r.NextDouble();
+             // r.NextDouble();
 
                // car.lightSense.leftOn += (int)(((float)rr - 0.5f) * 15.0f);
 
@@ -607,9 +664,9 @@ namespace fsSim
         {
             cpHist = new List<carPos>();
 
-            car.x = 400;
-            car.y = 2000;
-            car.dir = Math.PI / 2 *20/16;
+            car.x = 450;
+            car.y = 1500;
+            car.dir = -Math.PI / 3;
             car.servoDeg = 0;
             car.turnRad = 500000;
             car.vel = 0;//200mm/s
@@ -628,7 +685,7 @@ namespace fsSim
 
 
             car.lightSense.posX = 200;
-            car.lightSense.width = 120;
+            car.lightSense.width = 150;
 
             car.ctrl = new carControl();
             car.ctrl.center = 64;
@@ -744,18 +801,21 @@ namespace fsSim
                 cc.x = car.x;
                 cc.y = car.y;
                 cc.speed = car.vel;
-
-                cpHist.Add(cc);
+                
+                Math.DivRem(runStep, 10, out rem);
+                if (rem == 0)
+                    cpHist.Add(cc);
 
                 errorMean += Math.Abs(car.ctrl.error);
 
-                if (car.lightSense.senseWide > 100)
+                if (car.lightSense.senseWide > 28 && car.lightSense.senseWide < 40)
                 {
                     errorMean = errorMean / (double)runStep;
                     break;
                 }
                 runStep++;
             }
+            errorMean = errorMean / (double)runStep;
             sr.Close();
             label1.Text = "Lap :" + lapTime.ToString("F3");
             Console.WriteLine("Done : er=" + errorSweep + " time =" + lapTime.ToString("F3") + " error:"+errorMean.ToString("F1")); ;
